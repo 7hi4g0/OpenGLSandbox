@@ -27,6 +27,7 @@ XWindowAttributes		gwa;
 XEvent					xev;
 GLXFBConfig				fbc;
 Atom					delete_event;
+Bool					loop;
 
 PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
 
@@ -241,8 +242,8 @@ void TreatEvents() {
 				cout << xev.xmotion.x << ", " << xev.xmotion.y << endl << endl;*/
 				break;
 			case ClientMessage:
-				/*if (xev.xclient.data.l[0] == delete_event)
-					loop = false;*/
+				if (xev.xclient.data.l[0] == delete_event)
+					loop = false;
 				break;
 			case ConfigureNotify:					
 				glViewport(0, 0, xev.xconfigure.width, xev.xconfigure.height);
