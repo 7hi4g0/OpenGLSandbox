@@ -1,6 +1,7 @@
-#ifndef	_WINSYS_H
-#define	_WINSYS_H
+#ifndef	__WINSYS_H__
+#define	__WINSYS_H__
 
+#include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
@@ -25,4 +26,4 @@ void msleep(unsigned int msec);
 unsigned int getTime();
 void NonFullscreen();
 
-#endif //_WINSYS_H
+#endif //__WINSYS_H__
