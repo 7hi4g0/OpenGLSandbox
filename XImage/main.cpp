@@ -71,8 +71,8 @@ int main() {
 
 		char *pixel = image.data;
 
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < height; x++) {
+			for (int y = 0; y < width; y++) {
 				pixel[0] = 0;
 				pixel[1] = 0;
 				pixel[2] = (char) x;
