@@ -9,6 +9,13 @@
 using std::cout;
 using std::endl;
 
+void resize(XEvent *xev);
+void resizeImage(XImage *image, unsigned int width, unsigned int height);
+
+static GC gc;
+static XImage image;
+static unsigned int width, height;
+
 int main() {
 	CreateWindow();
 
@@ -17,40 +24,29 @@ int main() {
 	GcValues.fill_style = FillSolid;
 	GcValues.foreground = 0xFF0000;
 
-	GC gc;
-
 	gc = XCreateGC(dpy, win, GCForeground | GCFillStyle, &GcValues);
 
 	XWindowAttributes winAttrs;
-	unsigned int width, height;
 
 	cout << "Trying to get Windows Geometry" << endl;
 	XGetWindowAttributes(dpy, win, &winAttrs);
 	width = winAttrs.width;
 	height = winAttrs.height;
 
-	char *data;
-
-	data = (char *) malloc(sizeof(char) * width * height * 4);
-
-	if (data == NULL) {
-		cout << "Unable to allocate memory!";
-		exit(1);
-	}
-
 	cout << "Visual masks" << endl << std::hex << vi->red_mask << endl << vi->green_mask << endl << vi->blue_mask << endl << std::dec;
 	cout << "width: " << width << ", height: " << height << endl;
 	cout << "byte_order: " << (dpy->byte_order == LSBFirst ? "LSBFirst" : "MSBFirst") << endl;
 	cout << "bitmap_unit: " << (dpy->bitmap_unit) << endl;
 	cout << "bitmap_bit_order: " << (dpy->bitmap_bit_order == LSBFirst ? "LSBFirst" : "MSBFirst") << endl;
+	cout << "TreatConfigureNotify: " << (TreatConfigureNotify == NULL ? "NULL" : "Undefined") << endl;
 
-	XImage image;
+	TreatConfigureNotify = resize;
 
 	image.width = width;
 	image.height = height;
 	image.xoffset = 0;
 	image.format = ZPixmap;
-	image.data = data;
+	image.data = NULL;
 	image.byte_order = MSBFirst;
 	image.bitmap_unit = 32;
 	image.bitmap_bit_order = MSBFirst;
@@ -63,33 +59,66 @@ int main() {
 	image.blue_mask = vi->blue_mask;
 	image.obdata = NULL;
 
-	XInitImage(&image);
-
-	char *pixel = data;
-
-	for (int x = 0; x < width; x++) {
-		for (int y = 0; y < height; y++) {
-			pixel[0] = 0;
-			pixel[1] = 0;
-			pixel[2] = (char) x;
-			pixel[3] = (char) y;
-
-			pixel += 4;
-		}
-	}
-
 	XClearWindow(dpy, win);
 
-	XPutImage(dpy, win, gc, &image, 0, 0, 0, 0, width, height);
+	resizeImage(&image, width, height);
+
+	int offset = 0;
 
 	loop = true;
 	while(loop) {
 		TreatEvents();
+
+		char *pixel = image.data;
+
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				pixel[0] = 0;
+				pixel[1] = 0;
+				pixel[2] = (char) x;
+				pixel[3] = (char) y;
+
+				pixel += 4;
+			}
+		}
+
+		offset += 1;
+
+		XPutImage(dpy, win, gc, &image, 0, 0, 0, 0, width, height);
 	}
 
-	free(data);
+	free(image.data);
 
 	XFreeGC(dpy, gc);
 	DestroyWindow();
 	return 0;
+}
+
+void resize(XEvent *xev) {
+	width = xev->xconfigure.width;
+	height = xev->xconfigure.height;
+
+	resizeImage(&image, width, height);
+}
+
+void resizeImage(XImage *image, unsigned int width, unsigned int height) {
+	char *data;
+
+	if (image->data != NULL) {
+		free(image->data);
+	}
+
+	data = (char *) malloc(sizeof(char) * width * height * 4);
+
+	if (data == NULL) {
+		cout << "Unable to allocate memory!";
+		exit(1);
+	}
+
+	image->width = width;
+	image->height = height;
+	image->data = data;
+	image->bytes_per_line = 0;
+
+	XInitImage(image);
 }

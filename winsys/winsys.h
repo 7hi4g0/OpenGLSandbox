@@ -26,4 +26,6 @@ void msleep(unsigned int msec);
 unsigned int getTime();
 void NonFullscreen();
 
+extern void (*TreatConfigureNotify)(XEvent *xev);
+
 #endif //__WINSYS_H__

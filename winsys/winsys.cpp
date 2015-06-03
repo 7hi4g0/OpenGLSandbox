@@ -16,6 +16,8 @@
 using std::cout;
 using std::endl;
 
+void (*TreatConfigureNotify)(XEvent *xev);
+
 Display					*dpy;
 Window					root;
 XVisualInfo				*vi;
@@ -249,6 +251,10 @@ void TreatEvents() {
 			case ConfigureNotify:					
 				glViewport(0, 0, xev.xconfigure.width, xev.xconfigure.height);
 				//projection.setPerspective(60, static_cast<float>(xev.xconfigure.width) / xev.xconfigure.height, 1, 1000);
+
+				if (TreatConfigureNotify != NULL) {
+					TreatConfigureNotify(&xev);
+				}
 				break;
 			default:
 				break;
