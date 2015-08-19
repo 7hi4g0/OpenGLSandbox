@@ -1,5 +1,6 @@
 #include <winsys.h>
 
+#include <sys/mman.h>
 #include <X11/Xlibint.h>
 
 #include <iostream>
@@ -49,7 +50,7 @@ int main() {
 	image.data = NULL;
 	image.byte_order = MSBFirst;
 	image.bitmap_unit = 32;
-	image.bitmap_bit_order = MSBFirst;
+	image.bitmap_bit_order = LSBFirst;
 	image.bitmap_pad = 32;
 	image.depth = 24;
 	image.bytes_per_line = 0;
@@ -87,7 +88,8 @@ int main() {
 		XPutImage(dpy, win, gc, &image, 0, 0, 0, 0, width, height);
 	}
 
-	free(image.data);
+	munmap(image.data, sizeof(char) * image.width * image.height * 4);
+	//free(image.data);
 
 	XFreeGC(dpy, gc);
 	DestroyWindow();
@@ -105,10 +107,13 @@ void resizeImage(XImage *image, unsigned int width, unsigned int height) {
 	char *data;
 
 	if (image->data != NULL) {
-		free(image->data);
+		munmap(image->data, sizeof(char) * image->width * image->height * 4);
+		//free(image->data);
 	}
 
-	data = (char *) malloc(sizeof(char) * width * height * 4);
+	data = (char *) mmap(NULL, sizeof(char) * width * height * 4, PROT_READ | PROT_WRITE,
+						 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	//data = (char *) malloc(sizeof(char) * width * height * 4);
 
 	if (data == NULL) {
 		cout << "Unable to allocate memory!";
