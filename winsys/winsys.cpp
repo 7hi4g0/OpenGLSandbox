@@ -1,14 +1,10 @@
 #include "winsys.h"
 
-#define		GL_GLEXT_PROTOTYPES
-
 #include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
 #include <sys/time.h>
-#include <GL/glx.h>
-#include <X11/Xlib.h>
 
 // Define se a janela deve ser fullscreen
 //#define		Full

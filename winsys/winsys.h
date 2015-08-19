@@ -1,6 +1,8 @@
 #ifndef	__WINSYS_H__
 #define	__WINSYS_H__
 
+#define		GL_GLEXT_PROTOTYPES
+
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
