@@ -12,7 +12,10 @@
 using std::cout;
 using std::endl;
 
+KEY_PRESS(TreatKeyPressStub) {}
+
 void (*TreatConfigureNotify)(XEvent *xev);
+KeyPressFn *TreatKeyPress = TreatKeyPressStub;
 
 Display					*dpy;
 Window					root;
@@ -154,57 +157,8 @@ void TreatEvents() {
 		
 		switch (xev.type){
 			case KeyPress:
-				/*switch (XLookupKeysym(&xev.xkey, 0)){
-					case (XK_space):
-						//modelview.translate(0, 0, 1);
-						
-						//if (quant == size)
-						//	quant = 0;
-						//
-						//quant += 600;
-						break;
-					case (XK_w):
-						if (xev.xkey.state & ShiftMask)
-							vert = -Run;
-						else
-							vert = -Walk;
-						break;
-					case (XK_s):
-						if (xev.xkey.state & ShiftMask)
-							vert = Run;
-						else
-							vert = Walk;
-						break;
-					case (XK_a):
-						if (xev.xkey.state & ShiftMask)
-							hor = Run;
-						else
-							hor = Walk;
-						break;
-					case (XK_d):
-						if (xev.xkey.state & ShiftMask)
-							hor = -Run;
-						else
-							hor = -Walk;
-						break;
-					case (XK_Up):
-						vertRot++;
-						break;
-					case (XK_Down):
-						vertRot--;
-						break;
-					case (XK_Left):
-						horRot++;
-						break;
-					case (XK_Right):
-						horRot--;
-						break;
-					case (XK_Escape):
-						loop = false;
-						break;
-				}
-				//cout << (xev.xkey.state & Mod1Mask) << endl;
-				break;*/
+				TreatKeyPress(&xev.xkey);
+				break;
 			case KeyRelease:
 				/*switch (XLookupKeysym(&xev.xkey, 0)){
 					case (XK_space):

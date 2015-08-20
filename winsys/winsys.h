@@ -1,8 +1,6 @@
 #ifndef	__WINSYS_H__
 #define	__WINSYS_H__
 
-#define		GL_GLEXT_PROTOTYPES
-
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
@@ -28,6 +26,10 @@ void msleep(unsigned int msec);
 unsigned int getTime();
 void NonFullscreen();
 
+#define KEY_PRESS(name)		void name(XKeyEvent *xkey)
+typedef KEY_PRESS(KeyPressFn);
+
 extern void (*TreatConfigureNotify)(XEvent *xev);
+extern KeyPressFn *TreatKeyPress;
 
 #endif //__WINSYS_H__

@@ -4,7 +4,7 @@ layout(quads, equal_spacing, ccw) in;
 
 in vec4 teColor[];
 
-flat out vec4 fColor;
+out vec4 gColor;
 
 vec4 interpolate(vec4 v0, vec4 v1, vec4 v2, vec4 v3);
 
@@ -15,7 +15,7 @@ void main() {
 		gl_in[2].gl_Position,
 		gl_in[3].gl_Position
 	);
-	fColor = interpolate(
+	gColor = interpolate(
 		teColor[0],
 		teColor[1],
 		teColor[2],

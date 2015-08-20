@@ -17,6 +17,7 @@ std::string readFile(const char * const filename);
 void setShader(GLuint shader, const char * sourceFile);
 void setPipeline();
 void getFunctionPointers();
+KEY_PRESS(keyPress);
 
 typedef struct {
 	GLfloat x;
@@ -31,7 +32,11 @@ typedef struct {
 } Color;
 
 static int debug;
+static int verbose;
 static GLuint program;
+static GLint maxTessLevel;
+static GLfloat outerLevel;
+static GLfloat innerLevel;
 
 PFNGLGENVERTEXARRAYSPROC			glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC			glBindVertexArray;
@@ -53,16 +58,21 @@ PFNGLLINKPROGRAMPROC				glLinkProgram;
 PFNGLDELETESHADERPROC				glDeleteShader;
 PFNGLPATCHPARAMETERIPROC			glPatchParameteri;
 PFNGLPATCHPARAMETERFVPROC			glPatchParameterfv;
+PFNGLGETUNIFORMLOCATIONPROC			glGetUniformLocation;
+PFNGLUNIFORM1FVPROC					glUniform1fv;
 
 int main(int argc, char *argv[]) {
 	char opt;
 
 	debug = 0;
 
-	while ((opt = getopt(argc, argv, ":d")) != -1) {
+	while ((opt = getopt(argc, argv, ":dv")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
+				break;
+			case 'v':
+				verbose += 1;
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -75,9 +85,16 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	TreatKeyPress = keyPress;
+
 	CreateWindow();
 
 	getFunctionPointers();
+
+	glGetIntegerv(GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
+	if (verbose) {
+		cout << "Max Tess Level: " << maxTessLevel << endl;
+	}
 
 	XClearWindow(dpy, win);
 
@@ -93,9 +110,9 @@ int main(int argc, char *argv[]) {
 	};
 	Color colors[4] = {
 		{1.0f, 1.0f, 1.0f},
-		{1.0f, 1.0f, 1.0f},
-		{1.0f, 1.0f, 1.0f},
-		{1.0f, 1.0f, 1.0f},
+		{1.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f},
 	};
 
 	GLuint vao;
@@ -121,11 +138,11 @@ int main(int argc, char *argv[]) {
 
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 
-	GLfloat innerLevel[] = {2.0f, 2.0f};
-	GLfloat outerLevel[] = {2.0f, 2.0f, 2.0f, 2.0f};
+	GLint innerLevelUniform = glGetUniformLocation(program, "tessLevelInner");
+	GLint outerLevelUniform = glGetUniformLocation(program, "tessLevelOuter");
 
-	glPatchParameterfv(GL_PATCH_DEFAULT_INNER_LEVEL, innerLevel);
-	glPatchParameterfv(GL_PATCH_DEFAULT_OUTER_LEVEL, outerLevel);
+	innerLevel = 2.0f;
+	outerLevel = 2.0f;
 
 	loop = true;
 	while(loop) {
@@ -133,9 +150,14 @@ int main(int argc, char *argv[]) {
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glUniform1fv(innerLevelUniform, 1, &innerLevel);
+		glUniform1fv(outerLevelUniform, 1, &outerLevel);
+
 		glDrawArrays(GL_PATCHES, 0, 4);
 
 		EndDraw();
+
+		msleep(33);
 	}
 
 	DestroyWindow();
@@ -218,6 +240,43 @@ void setPipeline() {
 	glDeleteShader(geomShader);
 }
 
+KEY_PRESS(keyPress) {
+	switch(XLookupKeysym(xkey, 0)) {
+		case (XK_o):
+			if (outerLevel < maxTessLevel) {
+				outerLevel += 1;
+			}
+			if (verbose) {
+				cout << "Current Outer Tess Level: " << outerLevel << endl;
+			}
+			break;
+		case (XK_l):
+			if (outerLevel > 1) {
+				outerLevel -= 1;
+			}
+			if (verbose) {
+				cout << "Current Outer Tess Level: " << outerLevel << endl;
+			}
+			break;
+		case (XK_i):
+			if (innerLevel < maxTessLevel) {
+				innerLevel += 1;
+			}
+			if (verbose) {
+				cout << "Current Inner Tess Level: " << innerLevel << endl;
+			}
+			break;
+		case (XK_k):
+			if (innerLevel > 1) {
+				innerLevel -= 1;
+			}
+			if (verbose) {
+				cout << "Current Inner Tess Level: " << innerLevel << endl;
+			}
+			break;
+	};
+}
+
 void getFunctionPointers() {
 	glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC) glXGetProcAddressARB( (const GLubyte *) "glGenVertexArrays");
 	glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC) glXGetProcAddressARB( (const GLubyte *) "glBindVertexArray");
@@ -239,4 +298,6 @@ void getFunctionPointers() {
 	glDeleteShader = (PFNGLDELETESHADERPROC) glXGetProcAddressARB( (const GLubyte *) "glDeleteShader");
 	glPatchParameteri = (PFNGLPATCHPARAMETERIPROC) glXGetProcAddressARB( (const GLubyte *) "glPatchParameteri");
 	glPatchParameterfv = (PFNGLPATCHPARAMETERFVPROC) glXGetProcAddressARB( (const GLubyte *) "glPatchParameterfv");
+	glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) glXGetProcAddressARB( (const GLubyte *) "glGetUniformLocation");
+	glUniform1fv = (PFNGLUNIFORM1FVPROC) glXGetProcAddressARB( (const GLubyte *) "glUniform1fv");
 }
