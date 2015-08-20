@@ -1,9 +1,11 @@
 #version 420 core
+
 in vec4 vVertex;
 in vec4 vColor;
-flat out vec4 fColor;
+
+out vec4 tcColor;
 
 void main() {
 	gl_Position = vVertex;
-	fColor = vColor;
+	tcColor = vColor;
 }
