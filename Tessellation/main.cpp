@@ -15,8 +15,7 @@ using std::stringstream;
 
 std::string readFile(const char * const filename);
 void setShader(GLuint shader, const char * sourceFile);
-void setPipeline1();
-void setPipeline2();
+void setPipeline();
 void getFunctionPointers();
 KEY_PRESS(keyPress);
 
@@ -100,8 +99,7 @@ int main(int argc, char *argv[]) {
 
 	XClearWindow(dpy, win);
 
-	setPipeline1();
-	setPipeline2();
+	setPipeline();
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -226,7 +224,7 @@ void setShader(GLuint shader, const char * sourceFile) {
 	}
 }
 
-void setPipeline1() {
+void setPipeline() {
 	GLuint vertexShader;
 	GLuint fragmentShader;
 	GLuint tessControlShader;
@@ -254,31 +252,14 @@ void setPipeline1() {
 
 	glLinkProgram(quadProgram);
 
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 	glDeleteShader(tessControlShader);
 	glDeleteShader(tessEvalShader);
-	glDeleteShader(geomShader);
-}
 
-void setPipeline2() {
-	GLuint vertexShader;
-	GLuint fragmentShader;
-	GLuint tessControlShader;
-	GLuint tessEvalShader;
-	GLuint geomShader;
-
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	tessControlShader = glCreateShader(GL_TESS_CONTROL_SHADER);
 	tessEvalShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
-	geomShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-	setShader(vertexShader, "./shaders/tess.vert");
-	setShader(fragmentShader, "./shaders/tess.frag");
 	setShader(tessControlShader, "./shaders/tri.tesc");
 	setShader(tessEvalShader, "./shaders/tri.tese");
-	setShader(geomShader, "./shaders/tess.geom");
 
 	triProgram = glCreateProgram();
 	glAttachShader(triProgram, vertexShader);
