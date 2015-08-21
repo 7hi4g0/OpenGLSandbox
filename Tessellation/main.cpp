@@ -15,7 +15,8 @@ using std::stringstream;
 
 std::string readFile(const char * const filename);
 void setShader(GLuint shader, const char * sourceFile);
-void setPipeline();
+void setPipeline1();
+void setPipeline2();
 void getFunctionPointers();
 KEY_PRESS(keyPress);
 
@@ -33,7 +34,8 @@ typedef struct {
 
 static int debug;
 static int verbose;
-static GLuint program;
+static GLuint quadProgram;
+static GLuint triProgram;
 static GLint maxTessLevel;
 static GLfloat outerLevel;
 static GLfloat innerLevel;
@@ -98,18 +100,25 @@ int main(int argc, char *argv[]) {
 
 	XClearWindow(dpy, win);
 
-	setPipeline();
+	setPipeline1();
+	setPipeline2();
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	Position rect[4] = {
-		{-0.9f, 0.9f, 0.0f},	//downleft
-		{-0.9f, -0.9f, 0.0f},	//upleft
-		{0.9f, 0.9f, 0.0f},		//downright
-		{0.9f, -0.9f, 0.0f},	//upright
+	Position rect[7] = {
+		{-0.9f, 0.4f, 0.0f},	//downleft
+		{-0.9f, -0.4f, 0.0f},	//upleft
+		{-0.1f, 0.4f, 0.0f},		//downright
+		{-0.1f, -0.4f, 0.0f},	//upright
+		{0.5f, 0.4f, 0.0f},
+		{0.1f, -0.4f, 0.0f},
+		{0.9f, -0.4f, 0.0f},
 	};
-	Color colors[4] = {
+	Color colors[7] = {
 		{1.0f, 1.0f, 1.0f},
+		{1.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f},
 		{1.0f, 0.0f, 0.0f},
 		{0.0f, 1.0f, 0.0f},
 		{0.0f, 0.0f, 1.0f},
@@ -124,22 +133,18 @@ int main(int argc, char *argv[]) {
 	glGenBuffers(2, &vbo[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(Position), rect, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 7 * sizeof(Position), rect, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(Color), colors, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 7 * sizeof(Color), colors, GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
-	glUseProgram(program);
-
-	glPatchParameteri(GL_PATCH_VERTICES, 4);
-
-	GLint innerLevelUniform = glGetUniformLocation(program, "tessLevelInner");
-	GLint outerLevelUniform = glGetUniformLocation(program, "tessLevelOuter");
+	GLint innerLevelUniform;
+	GLint outerLevelUniform;
 
 	innerLevel = 2.0f;
 	outerLevel = 2.0f;
@@ -150,10 +155,29 @@ int main(int argc, char *argv[]) {
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glUseProgram(quadProgram);
+
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+		innerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");
+		outerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");
+
 		glUniform1fv(innerLevelUniform, 1, &innerLevel);
 		glUniform1fv(outerLevelUniform, 1, &outerLevel);
 
 		glDrawArrays(GL_PATCHES, 0, 4);
+
+		glUseProgram(triProgram);
+
+		glPatchParameteri(GL_PATCH_VERTICES, 3);
+
+		innerLevelUniform = glGetUniformLocation(triProgram, "tessLevelInner");
+		outerLevelUniform = glGetUniformLocation(triProgram, "tessLevelOuter");
+
+		glUniform1fv(innerLevelUniform, 1, &innerLevel);
+		glUniform1fv(outerLevelUniform, 1, &outerLevel);
+
+		glDrawArrays(GL_PATCHES, 4, 3);
 
 		EndDraw();
 
@@ -202,7 +226,7 @@ void setShader(GLuint shader, const char * sourceFile) {
 	}
 }
 
-void setPipeline() {
+void setPipeline1() {
 	GLuint vertexShader;
 	GLuint fragmentShader;
 	GLuint tessControlShader;
@@ -217,21 +241,53 @@ void setPipeline() {
 
 	setShader(vertexShader, "./shaders/tess.vert");
 	setShader(fragmentShader, "./shaders/tess.frag");
-	setShader(tessControlShader, "./shaders/tess.tesc");
-	setShader(tessEvalShader, "./shaders/tess.tese");
+	setShader(tessControlShader, "./shaders/quad.tesc");
+	setShader(tessEvalShader, "./shaders/quad.tese");
 	setShader(geomShader, "./shaders/tess.geom");
 
-	program = glCreateProgram();
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glAttachShader(program, tessControlShader);
-	glAttachShader(program, tessEvalShader);
-	glAttachShader(program, geomShader);
+	quadProgram = glCreateProgram();
+	glAttachShader(quadProgram, vertexShader);
+	glAttachShader(quadProgram, fragmentShader);
+	glAttachShader(quadProgram, tessControlShader);
+	glAttachShader(quadProgram, tessEvalShader);
+	glAttachShader(quadProgram, geomShader);
 
-	glBindAttribLocation(program, 0, "vVertex");
-	glBindAttribLocation(program, 1, "vColor");
+	glLinkProgram(quadProgram);
 
-	glLinkProgram(program);
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+	glDeleteShader(tessControlShader);
+	glDeleteShader(tessEvalShader);
+	glDeleteShader(geomShader);
+}
+
+void setPipeline2() {
+	GLuint vertexShader;
+	GLuint fragmentShader;
+	GLuint tessControlShader;
+	GLuint tessEvalShader;
+	GLuint geomShader;
+
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	tessControlShader = glCreateShader(GL_TESS_CONTROL_SHADER);
+	tessEvalShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
+	geomShader = glCreateShader(GL_GEOMETRY_SHADER);
+
+	setShader(vertexShader, "./shaders/tess.vert");
+	setShader(fragmentShader, "./shaders/tess.frag");
+	setShader(tessControlShader, "./shaders/tri.tesc");
+	setShader(tessEvalShader, "./shaders/tri.tese");
+	setShader(geomShader, "./shaders/tess.geom");
+
+	triProgram = glCreateProgram();
+	glAttachShader(triProgram, vertexShader);
+	glAttachShader(triProgram, fragmentShader);
+	glAttachShader(triProgram, tessControlShader);
+	glAttachShader(triProgram, tessEvalShader);
+	glAttachShader(triProgram, geomShader);
+
+	glLinkProgram(triProgram);
 
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
