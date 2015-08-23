@@ -5,8 +5,14 @@ layout(vertices = 4) out;
 uniform float tessLevelOuter;
 uniform float tessLevelInner;
 
+in gl_PerVertex {
+	vec4 gl_Position;
+} gl_in[];
 in vec4 tcColor[];
 
+out gl_PerVertex {
+	vec4 gl_Position;
+} gl_out[];
 out vec4 teColor[];
 
 void main() {

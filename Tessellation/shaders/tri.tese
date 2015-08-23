@@ -2,8 +2,14 @@
 
 layout(triangles, equal_spacing, ccw) in;
 
+in gl_PerVertex {
+	vec4 gl_Position;
+} gl_in[];
 in vec4 teColor[];
 
+out gl_PerVertex {
+	vec4 gl_Position;
+};
 out vec4 gColor;
 
 vec4 interpolate(vec4 v0, vec4 v1, vec4 v2);
