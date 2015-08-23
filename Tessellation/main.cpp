@@ -394,6 +394,14 @@ KEY_PRESS(keyPress) {
 				cout << "Current Inner Tess Level: " << innerLevel << endl;
 			}
 			break;
+		case (XK_g):
+			static unsigned int geometry = 0;
+
+			if ((++geometry) % 2) {
+				glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, solidProgram);	GLERR();
+			} else {
+				glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+			}
 	};
 }
 
