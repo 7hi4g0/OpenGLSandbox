@@ -1,2 +1,2 @@
-model
-model.o
+model-bin
+libmodel.a
