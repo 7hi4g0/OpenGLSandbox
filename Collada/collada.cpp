@@ -1,11 +1,17 @@
 #include "collada.h"
 
 int main() {
-	getColladaModel("suzanne.dae");
+	Model *model;
+
+	model = getColladaModel("suzanne.dae");
+
+	for (int i = 0; i < 2; i++) {
+		cout << "Found data: " << model->src[i].id << " with size " << model->src[i].count << endl;
+	}
 	return 0;
 }
 
-void getColladaModel(const char * const filename) {
+Model *getColladaModel(const char * const filename) {
 	XMLDocument doc;
 	doc.LoadFile(filename);
 
@@ -14,11 +20,24 @@ void getColladaModel(const char * const filename) {
 
 	cout << "Found model: " << geometry->Attribute("name") << endl;
 
-	XMLElement *source;
+	Model *model = new Model;
+	int srcCount = 0;
+	XMLElement *meshElem;
+	XMLElement *elem;
 
-	source = geometry->FirstChildElement("mesh")->FirstChildElement("source");
+	meshElem = geometry->FirstChildElement("mesh")->FirstChildElement();
 
-	getColladaSource(source);
+	for (; meshElem != NULL; meshElem = meshElem->NextSiblingElement()) {
+		const char *name;
+
+		name = meshElem->Name();
+
+		if (strcmp(name, "source") == 0) {
+			model->src[srcCount++] = getColladaSource(elem);
+		}
+	}
+
+	return model;
 }
 
 Source getColladaSource(XMLElement *source) {
@@ -38,5 +57,5 @@ Source getColladaSource(XMLElement *source) {
 		floats >> data[index];
 	}
 
-	return (Source) {count, (void *) data};
+	return (Source) {count, source->Attribute("id"), (void *) data};
 }

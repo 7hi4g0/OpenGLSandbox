@@ -10,8 +10,13 @@ using tinyxml2::XMLElement;
 
 typedef struct {
 	int count;
+	const char *id;
 	void *data;
 } Source;
 
-void getColladaModel(const char * const filename);
+typedef struct {
+	Source src[2];
+} Model;
+
+Model *getColladaModel(const char * const filename);
 Source getColladaSource(XMLElement *source);
