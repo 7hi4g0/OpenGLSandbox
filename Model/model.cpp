@@ -1,13 +1,22 @@
 #include "model.h"
 
 int main() {
-	loadObjModel("../Models/cube.obj");
+	Model *model = loadObjModel("../Models/cube.obj");
+
+	int count = model->pos.size();
+	
+
+	for (int i = 0; i < count; i++) {
+		cout << model->pos[i] << endl;
+	}
+
 	return 0;
 }
 
-void loadObjModel(const char * const filename) {
-	std::vector<Position> *vertex = new std::vector<Position>();
-	std::vector<Position> *normals = new std::vector<Position>();
+Model *loadObjModel(const char * const filename) {
+	Model *model = new Model;
+	std::vector<Position> vertex;
+	std::vector<Position> normals;
 
 	std::ifstream file;
 	file.open(filename);
@@ -21,11 +30,31 @@ void loadObjModel(const char * const filename) {
 			Position pos;
 
 			file >> pos;
-			vertex->push_back(pos);
+			vertex.push_back(pos);
+		} else if (type.compare("vn") == 0) {
+			Position pos;
+
+			file >> pos;
+			normals.push_back(pos);
+		} else if (type.compare("f") == 0) {
+			std::string line;
+
+			std::getline(file, line);
+
+			std::istringstream indices(line);
+			std::string index;
+
+			while (indices >> index) {
+				int posIndex;
+				int normIndex;
+
+				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
+
+				model->pos.push_back(vertex[posIndex]);
+				model->normals.push_back(normals[normIndex]);
+			}
 		}
 	}
 
-	for (int index = 0; index < vertex->size(); index++) {
-		cout << (*vertex)[index] << endl;
-	}
+	return model;
 }

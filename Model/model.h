@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -20,4 +21,10 @@ struct Position {
 	}
 };
 
-void loadObjModel(const char * const filename);
+struct Model {
+	std::vector<Position> pos;
+	std::vector<Position> normals;
+	std::vector<unsigned short> indices;
+};
+
+Model *loadObjModel(const char * const filename);
