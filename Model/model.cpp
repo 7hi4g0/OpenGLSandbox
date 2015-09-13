@@ -37,8 +37,8 @@ Model *loadObjModel(const char * const filename) {
 
 				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
 
-				model->pos.push_back(vertex[posIndex]);
-				model->normals.push_back(normals[normIndex]);
+				model->pos.push_back(vertex[posIndex - 1]);
+				model->normals.push_back(normals[normIndex - 1]);
 			}
 		}
 	}

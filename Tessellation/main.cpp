@@ -121,10 +121,10 @@ int main(int argc, char *argv[]) {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	Position rect[7] = {
-		{-0.9f, 0.4f, 0.0f},	//downleft
-		{-0.9f, -0.4f, 0.0f},	//upleft
-		{-0.1f, 0.4f, 0.0f},		//downright
-		{-0.1f, -0.4f, 0.0f},	//upright
+		{-0.9f, 0.4f, 0.0f},	//upleft
+		{-0.9f, -0.4f, 0.0f},	//downleft
+		{-0.1f, -0.4f, 0.0f},	//downright
+		{-0.1f, 0.4f, 0.0f},	//upright
 		{0.5f, 0.4f, 0.0f},
 		{0.1f, -0.4f, 0.0f},
 		{0.9f, -0.4f, 0.0f},
