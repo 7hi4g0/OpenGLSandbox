@@ -25,21 +25,23 @@ void setPipeline();
 void getFunctionPointers();
 void checkGLErr(const char *file, int line);
 KEY_PRESS(keyPress);
+BUTTON_PRESS(buttonPress);
 
 static int debug;
 static int verbose;
 static GLuint pipeline;
 static GLuint vertProgram;
-static GLuint fragProgram;
 static GLuint quadProgram;
 static GLuint triProgram;
 static GLuint lineProgram;
-static GLuint solidProgram;
+static GLuint flatProgram;
+static GLuint smoothProgram;
 static GLint maxTessLevel;
 static GLfloat outerLevel;
 static GLfloat innerLevel;
 static Matrix4 modelview;
 static Matrix4 projection;
+static Position lightPos;
 
 PFNGLGENVERTEXARRAYSPROC			glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC			glBindVertexArray;
@@ -71,6 +73,7 @@ PFNGLPATCHPARAMETERIPROC			glPatchParameteri;
 PFNGLPATCHPARAMETERFVPROC			glPatchParameterfv;
 PFNGLGETUNIFORMLOCATIONPROC			glGetUniformLocation;
 PFNGLPROGRAMUNIFORM1FVPROC			glProgramUniform1fv;
+PFNGLPROGRAMUNIFORM3FVPROC			glProgramUniform3fv;
 PFNGLPROGRAMUNIFORMMATRIX4FVPROC	glProgramUniformMatrix4fv;
 
 int main(int argc, char *argv[]) {
@@ -98,6 +101,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	TreatKeyPress = keyPress;
+	TreatButtonPress = buttonPress;
 
 	CreateWindow();
 
@@ -112,7 +116,8 @@ int main(int argc, char *argv[]) {
 
 	setPipeline();	GLERR();
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
 	Model *model;
 	GLuint vertices;
@@ -144,10 +149,12 @@ int main(int argc, char *argv[]) {
 	GLint outerLevelUniform;
 	GLint modelviewUniform;
 	GLint projectionUniform;
+	GLint lightPosUniform;
 
 	innerLevel = 2.0f;
 	outerLevel = 2.0f;
 
+	lightPos = (Position) {1.5f, 1.5f, 0.0f};
 	modelview.identity();
 	modelview.translate(0, 0, 3);
 	projection.setPerspective(60, 1, 1, 1000);
@@ -158,7 +165,7 @@ int main(int argc, char *argv[]) {
 	while(loop) {
 		TreatEvents();
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
 		validatePipeline(pipeline);
@@ -167,13 +174,15 @@ int main(int argc, char *argv[]) {
 
 		innerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
 		outerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
-		modelviewUniform = glGetUniformLocation(vertProgram, "mvmat");	GLERR();
-		projectionUniform = glGetUniformLocation(vertProgram, "pmat");	GLERR();
+		modelviewUniform = glGetUniformLocation(vertProgram, "uModelView");	GLERR();
+		projectionUniform = glGetUniformLocation(vertProgram, "uProjection");	GLERR();
+		lightPosUniform = glGetUniformLocation(vertProgram, "uLightPos");	GLERR();
 
 		glProgramUniform1fv(quadProgram, innerLevelUniform, 1, &innerLevel);	GLERR();
 		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+		glProgramUniform3fv(vertProgram, lightPosUniform, 1, (float *) &lightPos);	GLERR();
 
 		glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
 
@@ -273,51 +282,53 @@ void linkProgram(GLuint program) {
 
 void setPipeline() {
 	GLuint vertexShader;
-	GLuint fragmentShader;
+	GLuint flatFShader;
+	GLuint smoothFShader;
 	GLuint quadTCShader;
 	GLuint quadTEShader;
 	GLuint triTCShader;
 	GLuint triTEShader;
 	GLuint lineGShader;
-	GLuint solidGShader;
+	GLuint flatGShader;
 
 	glGenProgramPipelines(1, &pipeline);	GLERR();
 
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	flatFShader = glCreateShader(GL_FRAGMENT_SHADER);
+	smoothFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	quadTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
 	quadTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
 	triTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
 	triTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
-	solidGShader = glCreateShader(GL_GEOMETRY_SHADER);
+	flatGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
 	setShader(vertexShader, "./shaders/tess.vert");	GLERR();
-	setShader(fragmentShader, "./shaders/tess.frag");	GLERR();
+	setShader(flatFShader, "./shaders/flat.frag");	GLERR();
+	setShader(smoothFShader, "./shaders/smooth.frag");	GLERR();
 	setShader(quadTCShader, "./shaders/quad.tesc");	GLERR();
 	setShader(quadTEShader, "./shaders/quad.tese");	GLERR();
 	setShader(triTCShader, "./shaders/tri.tesc");	GLERR();
 	setShader(triTEShader, "./shaders/tri.tese");	GLERR();
 	setShader(lineGShader, "./shaders/line.geom");	GLERR();
-	setShader(solidGShader, "./shaders/solid.geom");	GLERR();
+	setShader(flatGShader, "./shaders/flat.geom");	GLERR();
 
 	vertProgram = glCreateProgram();
-	fragProgram = glCreateProgram();
 	quadProgram = glCreateProgram();
 	triProgram = glCreateProgram();
 	lineProgram = glCreateProgram();
-	solidProgram = glCreateProgram();
+	flatProgram = glCreateProgram();
+	smoothProgram = glCreateProgram();
 
 	glProgramParameteri(vertProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
-	glProgramParameteri(fragProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(quadProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(triProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(lineProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
-	glProgramParameteri(solidProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+	glProgramParameteri(flatProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+	glProgramParameteri(smoothProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 
 	//Base Shaders
 	glAttachShader(vertProgram, vertexShader);	GLERR();
-	glAttachShader(fragProgram, fragmentShader);	GLERR();
 
 	//Quad Tess Shaders
 	glAttachShader(quadProgram, quadTCShader);	GLERR();
@@ -329,32 +340,39 @@ void setPipeline() {
 
 	//Line Geom Shader
 	glAttachShader(lineProgram, lineGShader);	GLERR();
+	glAttachShader(lineProgram, flatFShader);	GLERR();
 
-	//Solid Geom Shader
-	glAttachShader(solidProgram, solidGShader);	GLERR();
+	//Flat Solid Shaders
+	glAttachShader(flatProgram, flatGShader);	GLERR();
+	glAttachShader(flatProgram, flatFShader);	GLERR();
+
+	//Smooth Solid Shaders
+	glAttachShader(smoothProgram, smoothFShader);	GLERR();
 
 	linkProgram(vertProgram);	GLERR();
-	linkProgram(fragProgram);	GLERR();
 	linkProgram(quadProgram);	GLERR();
 	linkProgram(triProgram);	GLERR();
 	linkProgram(lineProgram);	GLERR();
-	linkProgram(solidProgram);	GLERR();
+	linkProgram(flatProgram);	GLERR();
+	linkProgram(smoothProgram);	GLERR();
 
 	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	glDeleteShader(flatFShader);
+	glDeleteShader(smoothFShader);
 	glDeleteShader(quadTCShader);
 	glDeleteShader(quadTEShader);
 	glDeleteShader(triTCShader);
 	glDeleteShader(triTEShader);
 	glDeleteShader(lineGShader);
-	glDeleteShader(solidGShader);
+	glDeleteShader(flatGShader);
 
 	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, vertProgram);	GLERR();
-	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, fragProgram);	GLERR();
-	glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
 }
 
 KEY_PRESS(keyPress) {
+	static unsigned int geometry = 0;
+
 	switch(XLookupKeysym(xkey, 0)) {
 		case (XK_o):
 			if (outerLevel < maxTessLevel) {
@@ -389,13 +407,39 @@ KEY_PRESS(keyPress) {
 			}
 			break;
 		case (XK_g):
-			static unsigned int geometry = 0;
-
 			if ((++geometry) % 2) {
-				glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, solidProgram);	GLERR();
+				glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, flatProgram);	GLERR();
 			} else {
-				glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+				glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
 			}
+			break;
+		case (XK_s):
+			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
+			glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
+			geometry = 1;
+			break;
+		case (XK_f):
+			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
+			geometry = 1;
+			break;
+		case (XK_Escape):
+			loop = false;
+			break;
+		default:
+			break;
+	};
+}
+
+BUTTON_PRESS(buttonPress) {
+	switch (xbutton->button) {
+		case (Button4):
+			modelview.translate(0, 0, 1);
+			break;
+		case (Button5):
+			modelview.translate(0, 0, -1);
+			break;
+		default:
+			break;
 	};
 }
 
@@ -441,5 +485,6 @@ void getFunctionPointers() {
 	glPatchParameterfv = (PFNGLPATCHPARAMETERFVPROC) glXGetProcAddress( (const GLubyte *) "glPatchParameterfv");
 	glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) glXGetProcAddress( (const GLubyte *) "glGetUniformLocation");
 	glProgramUniform1fv = (PFNGLPROGRAMUNIFORM1FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniform1fv");
+	glProgramUniform3fv = (PFNGLPROGRAMUNIFORM3FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniform3fv");
 	glProgramUniformMatrix4fv = (PFNGLPROGRAMUNIFORMMATRIX4FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniformMatrix4fv");
 }

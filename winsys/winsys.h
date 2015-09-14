@@ -28,8 +28,11 @@ void NonFullscreen();
 
 #define KEY_PRESS(name)		void name(XKeyEvent *xkey)
 typedef KEY_PRESS(KeyPressFn);
+#define BUTTON_PRESS(name)		void name(XButtonEvent *xbutton)
+typedef BUTTON_PRESS(ButtonPressFn);
 
 extern void (*TreatConfigureNotify)(XEvent *xev);
 extern KeyPressFn *TreatKeyPress;
+extern ButtonPressFn *TreatButtonPress;
 
 #endif //__WINSYS_H__

@@ -13,9 +13,11 @@ using std::cout;
 using std::endl;
 
 KEY_PRESS(TreatKeyPressStub) {}
+BUTTON_PRESS(TreatButtonPressStub) {}
 
 void (*TreatConfigureNotify)(XEvent *xev);
 KeyPressFn *TreatKeyPress = TreatKeyPressStub;
+ButtonPressFn *TreatButtonPress = TreatButtonPressStub;
 
 Display					*dpy;
 Window					root;
@@ -184,9 +186,7 @@ void TreatEvents() {
 				}
 				break;*/
 			case ButtonPress:
-				/*cout << xev.xbutton.time << endl;
-				cout << xev.xbutton.button << endl;
-				cout << xev.xbutton.x << ", " << xev.xbutton.y << endl << endl;*/
+				TreatButtonPress(&xev.xbutton);
 				break;
 			case MotionNotify:
 				/*static int lastX = 0;
