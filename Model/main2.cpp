@@ -167,13 +167,13 @@ int main(int argc, char *argv[]) {
 
 		innerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
 		outerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
-		modelviewUniform = glGetUniformLocation(quadProgram, "mvmat");	GLERR();
-		projectionUniform = glGetUniformLocation(quadProgram, "pmat");	GLERR();
+		modelviewUniform = glGetUniformLocation(vertProgram, "mvmat");	GLERR();
+		projectionUniform = glGetUniformLocation(vertProgram, "pmat");	GLERR();
 
 		glProgramUniform1fv(quadProgram, innerLevelUniform, 1, &innerLevel);	GLERR();
 		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
-		glProgramUniformMatrix4fv(quadProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
-		glProgramUniformMatrix4fv(quadProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
+		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
 
 		glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
 

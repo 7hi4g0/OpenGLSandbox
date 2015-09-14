@@ -4,8 +4,6 @@ layout(vertices = 4) out;
 
 uniform float tessLevelOuter;
 uniform float tessLevelInner;
-uniform mat4 mvmat;
-uniform mat4 pmat;
 
 in gl_PerVertex {
 	vec4 gl_Position;
@@ -28,6 +26,6 @@ void main() {
 	gl_TessLevelInner[1] =
 		tessLevelInner;
 
-	gl_out[gl_InvocationID].gl_Position = pmat * mvmat * gl_in[gl_InvocationID].gl_Position;
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	teColor[gl_InvocationID] = tcColor[gl_InvocationID];
 }
