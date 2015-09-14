@@ -41,7 +41,7 @@ static GLfloat outerLevel;
 static GLfloat innerLevel;
 static Matrix4 modelview;
 static Matrix4 projection;
-static Position lightPos;
+static Position lightPos[2];
 
 PFNGLGENVERTEXARRAYSPROC			glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC			glBindVertexArray;
@@ -117,22 +117,27 @@ int main(int argc, char *argv[]) {
 	setPipeline();	GLERR();
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
 	Model *model;
 	GLuint vertices;
+	GLuint quadIndices;
+	GLuint triIndices;
 
-	model = loadObjModel("../Models/cube.obj");
+	model = loadObjModel("../Models/suzanne.obj");
 
 	vertices = model->pos.size();
+	quadIndices = model->quadIndices.size();
+	triIndices = model->triIndices.size();
 
 	GLuint vao;
-	GLuint vbo[2];
+	GLuint vbo[4];
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	glGenBuffers(2, &vbo[0]);
+	glGenBuffers(4, &vbo[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->pos[0]), GL_STATIC_DRAW);
@@ -141,6 +146,12 @@ int main(int argc, char *argv[]) {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->normals[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(model->quadIndices[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(model->triIndices[0]), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -154,10 +165,12 @@ int main(int argc, char *argv[]) {
 	innerLevel = 2.0f;
 	outerLevel = 2.0f;
 
-	lightPos = (Position) {1.5f, 1.5f, 0.0f};
+	lightPos[0] = (Position) {1.5f, 1.5f, 0.0f};
+	lightPos[1] = (Position) {-1.5f, 1.5f, 0.0f};
 	modelview.identity();
+	modelview.rotate(180, 0, 1, 0);
 	modelview.translate(0, 0, 3);
-	projection.setPerspective(60, 1, 1, 1000);
+	projection.setPerspective(45, 1, 1, 1000);
 
 	glBindProgramPipeline(pipeline);	GLERR();
 
@@ -182,11 +195,12 @@ int main(int argc, char *argv[]) {
 		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-		glProgramUniform3fv(vertProgram, lightPosUniform, 1, (float *) &lightPos);	GLERR();
+		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 
-		glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
+		glDrawElements(GL_PATCHES, quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
+		//glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
 
-		/*
 		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
 		validatePipeline(pipeline);
 
@@ -198,8 +212,8 @@ int main(int argc, char *argv[]) {
 		glProgramUniform1fv(triProgram, innerLevelUniform, 1, &innerLevel);
 		glProgramUniform1fv(triProgram, outerLevelUniform, 1, &outerLevel);
 
-		glDrawArrays(GL_PATCHES, 4, 3);	GLERR();
-		*/
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
+		glDrawElements(GL_PATCHES, triIndices, GL_UNSIGNED_INT, 0);	GLERR();
 
 		EndDraw();	GLERR();
 
@@ -372,6 +386,7 @@ void setPipeline() {
 
 KEY_PRESS(keyPress) {
 	static unsigned int geometry = 0;
+	static float zLight = 0;
 
 	switch(XLookupKeysym(xkey, 0)) {
 		case (XK_o):
@@ -421,6 +436,18 @@ KEY_PRESS(keyPress) {
 		case (XK_f):
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
+			break;
+		case (XK_Up):
+			zLight += 1;
+			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
+			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
+			cout << zLight << endl;
+			break;
+		case (XK_Down):
+			zLight -= 1;
+			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
+			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
+			cout << zLight << endl;
 			break;
 		case (XK_Escape):
 			loop = false;

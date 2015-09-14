@@ -30,6 +30,11 @@ Model *loadObjModel(const char * const filename) {
 
 			std::istringstream indices(line);
 			std::string index;
+			unsigned int vertices;
+			unsigned int initialIndex;
+
+			vertices = 0;
+			initialIndex = model->pos.size();
 
 			while (indices >> index) {
 				int posIndex;
@@ -37,8 +42,25 @@ Model *loadObjModel(const char * const filename) {
 
 				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
 
+				//TODO: Search for equal vertices and only include if its different
 				model->pos.push_back(vertex[posIndex - 1]);
 				model->normals.push_back(normals[normIndex - 1]);
+
+				vertices++;
+			}
+
+			if (vertices == 4) {
+				model->quadIndices.push_back(initialIndex);
+				model->quadIndices.push_back(initialIndex + 1);
+				model->quadIndices.push_back(initialIndex + 2);
+				model->quadIndices.push_back(initialIndex + 3);
+			} else if (vertices == 3) {
+				model->triIndices.push_back(initialIndex);
+				model->triIndices.push_back(initialIndex + 1);
+				model->triIndices.push_back(initialIndex + 2);
+			} else {
+				cerr << "Unsupported face type: " << vertices << " vertices" << endl;
+				exit(1);
 			}
 		}
 	}

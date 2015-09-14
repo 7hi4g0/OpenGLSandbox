@@ -3,8 +3,10 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 using std::cout;
+using std::cerr;
 using std::endl;
 
 struct Position {
@@ -24,7 +26,8 @@ struct Position {
 struct Model {
 	std::vector<Position> pos;
 	std::vector<Position> normals;
-	std::vector<unsigned short> indices;
+	std::vector<unsigned int> quadIndices;
+	std::vector<unsigned int> triIndices;
 };
 
 Model *loadObjModel(const char * const filename);
