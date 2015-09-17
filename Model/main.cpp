@@ -1,5 +1,6 @@
 #include <winsys.h>
 #include <matrix4.h>
+#include <model.h>
 
 #include <iostream>
 #include <fstream>
@@ -7,8 +8,6 @@
 #include <string>
 #include <cstdlib>
 #include <unistd.h>
-
-#include "model.h"
 
 #define	GLERR()	checkGLErr(__FILE__, __LINE__)
 
@@ -316,6 +315,8 @@ void setPipeline() {
 	GLuint lineGShader;
 	GLuint flatGShader;
 
+#define SHADER_DIR	"../shaders/"
+
 	glGenProgramPipelines(1, &pipeline);	GLERR();
 
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -328,15 +329,15 @@ void setPipeline() {
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
 	flatGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-	setShader(vertexShader, "./shaders/tess.vert");	GLERR();
-	setShader(flatFShader, "./shaders/flat.frag");	GLERR();
-	setShader(smoothFShader, "./shaders/smooth.frag");	GLERR();
-	setShader(quadTCShader, "./shaders/quad.tesc");	GLERR();
-	setShader(quadTEShader, "./shaders/quad.tese");	GLERR();
-	setShader(triTCShader, "./shaders/tri.tesc");	GLERR();
-	setShader(triTEShader, "./shaders/tri.tese");	GLERR();
-	setShader(lineGShader, "./shaders/line.geom");	GLERR();
-	setShader(flatGShader, "./shaders/flat.geom");	GLERR();
+	setShader(vertexShader, SHADER_DIR "duoLight.vert");	GLERR();
+	setShader(flatFShader, SHADER_DIR "flat.frag");	GLERR();
+	setShader(smoothFShader, SHADER_DIR "smooth.frag");	GLERR();
+	setShader(quadTCShader, SHADER_DIR "quadConstant.tesc");	GLERR();
+	setShader(quadTEShader, SHADER_DIR "quadInterpolate.tese");	GLERR();
+	setShader(triTCShader, SHADER_DIR "triConstant.tesc");	GLERR();
+	setShader(triTEShader, SHADER_DIR "triInterpolate.tese");	GLERR();
+	setShader(lineGShader, SHADER_DIR "line.geom");	GLERR();
+	setShader(flatGShader, SHADER_DIR "flat.geom");	GLERR();
 
 	vertProgram = glCreateProgram();
 	quadProgram = glCreateProgram();

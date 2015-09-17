@@ -287,6 +287,8 @@ void setPipeline() {
 	GLuint lineGShader;
 	GLuint solidGShader;
 
+#define SHADER_DIR "../shaders/"
+
 	glGenProgramPipelines(1, &pipeline);	GLERR();
 
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -298,14 +300,14 @@ void setPipeline() {
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
 	solidGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-	setShader(vertexShader, "./shaders/tess.vert");	GLERR();
-	setShader(fragmentShader, "./shaders/tess.frag");	GLERR();
-	setShader(quadTCShader, "./shaders/quad.tesc");	GLERR();
-	setShader(quadTEShader, "./shaders/quad.tese");	GLERR();
-	setShader(triTCShader, "./shaders/tri.tesc");	GLERR();
-	setShader(triTEShader, "./shaders/tri.tese");	GLERR();
-	setShader(lineGShader, "./shaders/line.geom");	GLERR();
-	setShader(solidGShader, "./shaders/solid.geom");	GLERR();
+	setShader(vertexShader, SHADER_DIR "tess.vert");	GLERR();
+	setShader(fragmentShader, SHADER_DIR "flat.frag");	GLERR();
+	setShader(quadTCShader, SHADER_DIR "quadConstant.tesc");	GLERR();
+	setShader(quadTEShader, SHADER_DIR "quadInterpolate.tese");	GLERR();
+	setShader(triTCShader, SHADER_DIR "triConstant.tesc");	GLERR();
+	setShader(triTEShader, SHADER_DIR "triInterpolate.tese");	GLERR();
+	setShader(lineGShader, SHADER_DIR "line.geom");	GLERR();
+	setShader(solidGShader, SHADER_DIR "flat.geom");	GLERR();
 
 	vertProgram = glCreateProgram();
 	fragProgram = glCreateProgram();
