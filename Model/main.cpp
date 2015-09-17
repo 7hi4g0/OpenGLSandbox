@@ -81,16 +81,22 @@ PFNGLPROGRAMUNIFORMMATRIX4FVPROC	glProgramUniformMatrix4fv;
 
 int main(int argc, char *argv[]) {
 	char opt;
+	char *filename;
+
+	filename = (char *) "../Models/suzanne.obj";
 
 	debug = 0;
 
-	while ((opt = getopt(argc, argv, ":dv")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
 				break;
 			case 'v':
 				verbose += 1;
+				break;
+			case 'f':
+				filename = optarg;
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -128,7 +134,7 @@ int main(int argc, char *argv[]) {
 	GLuint quadIndices;
 	GLuint triIndices;
 
-	model = loadObjModel("../Models/suzanne.obj");
+	model = loadObjModel(filename);
 
 	vertices = model->pos.size();
 	quadIndices = model->quadIndices.size();
@@ -453,13 +459,11 @@ KEY_PRESS(keyPress) {
 			zLight += 1;
 			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
 			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
-			cout << zLight << endl;
 			break;
 		case (XK_Down):
 			zLight -= 1;
 			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
 			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
-			cout << zLight << endl;
 			break;
 		case (XK_Left):
 			angle += 5.0f;
