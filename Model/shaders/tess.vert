@@ -29,5 +29,5 @@ vec4 lightColor(vec4 normal, vec3 lightPos, vec4 baseColor) {
 	float dist = length(lightDir);
 	lightDir = normalize(lightDir);
 
-	return clamp(dot(normal, lightDir), 0.0, 1.0) * baseColor;
+	return clamp(dot(normal, lightDir), 0.0, 1.0) * baseColor / (1 + (0.01 / 9) * dist * dist);
 }

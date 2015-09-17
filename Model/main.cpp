@@ -24,6 +24,7 @@ void validatePipeline(GLint pipeline);
 void setPipeline();
 void getFunctionPointers();
 void checkGLErr(const char *file, int line);
+void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
@@ -41,6 +42,8 @@ static GLfloat outerLevel;
 static GLfloat innerLevel;
 static Matrix4 modelview;
 static Matrix4 projection;
+static float angle;
+static float distance;
 static Position lightPos[2];
 
 PFNGLGENVERTEXARRAYSPROC			glGenVertexArrays;
@@ -167,9 +170,11 @@ int main(int argc, char *argv[]) {
 
 	lightPos[0] = (Position) {1.5f, 1.5f, 0.0f};
 	lightPos[1] = (Position) {-1.5f, 1.5f, 0.0f};
+	angle = 180.0f;
+	distance = 3.0f;
 	modelview.identity();
-	modelview.rotate(180, 0, 1, 0);
-	modelview.translate(0, 0, 3);
+	modelview.pushMatrix();
+	updateModelView();
 	projection.setPerspective(45, 1, 1, 1000);
 
 	glBindProgramPipeline(pipeline);	GLERR();
@@ -384,6 +389,13 @@ void setPipeline() {
 	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
 }
 
+void updateModelView() {
+	modelview.popMatrix();
+	modelview.pushMatrix();
+	modelview.rotate(angle, 0, 1, 0);
+	modelview.translate(0, 0, distance);
+}
+
 KEY_PRESS(keyPress) {
 	static unsigned int geometry = 0;
 	static float zLight = 0;
@@ -449,6 +461,14 @@ KEY_PRESS(keyPress) {
 			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
 			cout << zLight << endl;
 			break;
+		case (XK_Left):
+			angle += 5.0f;
+			updateModelView();
+			break;
+		case (XK_Right):
+			angle -= 5.0f;
+			updateModelView();
+			break;
 		case (XK_Escape):
 			loop = false;
 			break;
@@ -460,10 +480,12 @@ KEY_PRESS(keyPress) {
 BUTTON_PRESS(buttonPress) {
 	switch (xbutton->button) {
 		case (Button4):
-			modelview.translate(0, 0, 1);
+			distance += 1.0f;
+			updateModelView();
 			break;
 		case (Button5):
-			modelview.translate(0, 0, -1);
+			distance -= 1.0f;
+			updateModelView();
 			break;
 		default:
 			break;
