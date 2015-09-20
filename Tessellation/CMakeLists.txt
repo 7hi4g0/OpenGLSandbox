@@ -3,4 +3,4 @@ project(Tessellation)
 
 add_executable(tessellation main.cpp)
 
-target_link_libraries(tessellation winsys GL X11)
+target_link_libraries(tessellation winsys pipeline GL X11)

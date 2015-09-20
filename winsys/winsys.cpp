@@ -19,6 +19,8 @@ void (*TreatConfigureNotify)(XEvent *xev);
 KeyPressFn *TreatKeyPress = TreatKeyPressStub;
 ButtonPressFn *TreatButtonPress = TreatButtonPressStub;
 
+int debug;
+int verbose;
 Display					*dpy;
 Window					root;
 XVisualInfo				*vi;

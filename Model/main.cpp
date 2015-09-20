@@ -1,34 +1,17 @@
 #include <winsys.h>
 #include <matrix4.h>
 #include <model.h>
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cstdlib>
-#include <unistd.h>
-
-#define	GLERR()	checkGLErr(__FILE__, __LINE__)
+#include <pipeline.h>
 
 using std::cout;
 using std::cerr;
 using std::endl;
-using std::ifstream;
-using std::stringstream;
 
-std::string readFile(const char * const filename);
-void setShader(GLuint shader, const char * sourceFile);
-void validatePipeline(GLint pipeline);
 void setPipeline();
-void getFunctionPointers();
-void checkGLErr(const char *file, int line);
 void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
-static int debug;
-static int verbose;
 static GLuint pipeline;
 static GLuint vertProgram;
 static GLuint quadProgram;
@@ -44,39 +27,6 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Position lightPos[2];
-
-PFNGLGENVERTEXARRAYSPROC			glGenVertexArrays;
-PFNGLBINDVERTEXARRAYPROC			glBindVertexArray;
-PFNGLGENBUFFERSPROC					glGenBuffers;
-PFNGLBINDBUFFERPROC					glBindBuffer;
-PFNGLBUFFERDATAPROC					glBufferData;
-PFNGLVERTEXATTRIBPOINTERPROC		glVertexAttribPointer;
-PFNGLENABLEVERTEXATTRIBARRAYPROC	glEnableVertexAttribArray;
-PFNGLSHADERSOURCEPROC				glShaderSource;
-PFNGLCOMPILESHADERPROC				glCompileShader;
-PFNGLGETSHADERIVPROC				glGetShaderiv;
-PFNGLGETSHADERINFOLOGPROC			glGetShaderInfoLog;
-PFNGLGETPROGRAMIVPROC				glGetProgramiv;
-PFNGLGETPROGRAMINFOLOGPROC			glGetProgramInfoLog;
-PFNGLGETPROGRAMPIPELINEIVPROC		glGetProgramPipelineiv;
-PFNGLGETPROGRAMPIPELINEINFOLOGPROC	glGetProgramPipelineInfoLog;
-PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
-PFNGLCREATESHADERPROC				glCreateShader;
-PFNGLCREATEPROGRAMPROC				glCreateProgram;
-PFNGLATTACHSHADERPROC				glAttachShader;
-PFNGLBINDATTRIBLOCATIONPROC			glBindAttribLocation;
-PFNGLLINKPROGRAMPROC				glLinkProgram;
-PFNGLDELETESHADERPROC				glDeleteShader;
-PFNGLUSEPROGRAMSTAGESPROC			glUseProgramStages;
-PFNGLGENPROGRAMPIPELINESPROC		glGenProgramPipelines;
-PFNGLBINDPROGRAMPIPELINEPROC		glBindProgramPipeline;
-PFNGLPROGRAMPARAMETERIPROC			glProgramParameteri;
-PFNGLPATCHPARAMETERIPROC			glPatchParameteri;
-PFNGLPATCHPARAMETERFVPROC			glPatchParameterfv;
-PFNGLGETUNIFORMLOCATIONPROC			glGetUniformLocation;
-PFNGLPROGRAMUNIFORM1FVPROC			glProgramUniform1fv;
-PFNGLPROGRAMUNIFORM3FVPROC			glProgramUniform3fv;
-PFNGLPROGRAMUNIFORMMATRIX4FVPROC	glProgramUniformMatrix4fv;
 
 int main(int argc, char *argv[]) {
 	char opt;
@@ -112,8 +62,6 @@ int main(int argc, char *argv[]) {
 	TreatButtonPress = buttonPress;
 
 	CreateWindow();
-
-	getFunctionPointers();
 
 	glGetIntegerv(GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
 	if (verbose) {
@@ -232,76 +180,6 @@ int main(int argc, char *argv[]) {
 
 	DestroyWindow();
 	return 0;
-}
-
-std::string readFile(const char * const filename) {
-	ifstream file;
-	stringstream contents;
-
-	file.open(filename);
-	contents << file.rdbuf();
-
-	return contents.str();
-}
-
-void setShader(GLuint shader, const char * sourceFile) {
-	GLint compileStatus;
-	std::string source;
-	const char * cSource;
-	int length;
-
-	source = readFile(sourceFile);
-	length = source.length();
-	cSource = source.c_str();
-
-	if (debug) {
-		cerr << source << endl;
-	}
-
-	glShaderSource(shader, 1, &cSource, &length);
-	glCompileShader(shader);
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		cerr << "Shader Compilation Error" << endl;
-
-		char log[5000];
-		glGetShaderInfoLog(shader, 5000, NULL, log);
-
-		cerr << log << endl;
-		exit(1);
-	}
-}
-
-void validatePipeline(GLint pipeline) {
-	GLint valid;
-
-	glValidateProgramPipeline(pipeline);
-	glGetProgramPipelineiv(pipeline, GL_VALIDATE_STATUS, &valid);	GLERR();
-	if (valid == GL_FALSE) {
-		cerr << "Program Pipeline Error" << endl;
-
-		char log[5000];
-		glGetProgramPipelineInfoLog(pipeline, 5000, NULL, log);	GLERR();
-
-		cerr << "Pipeline valid status: " << valid << endl << log << endl;
-		exit(1);
-	}
-}
-
-void linkProgram(GLuint program) {
-	GLint linkStatus;
-
-	glLinkProgram(program);
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
-	if (linkStatus == GL_FALSE) {
-		cerr << "Program Linking Error" << endl;
-
-		char log[5000];
-		glGetProgramInfoLog(program, 5000, NULL, log);
-
-		cerr << log << endl;
-		exit(1);
-	}
 }
 
 void setPipeline() {
@@ -495,50 +373,4 @@ BUTTON_PRESS(buttonPress) {
 		default:
 			break;
 	};
-}
-
-void checkGLErr(const char *file, int line) {
-	GLenum glErr;
-
-	glErr = glGetError();
-
-	if (glErr != GL_NO_ERROR) {
-		cerr << file << "," << line << " - OpenGL Error: " << glErr << endl;
-		exit(1);
-	}
-}
-
-void getFunctionPointers() {
-	glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC) glXGetProcAddress( (const GLubyte *) "glGenVertexArrays");
-	glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC) glXGetProcAddress( (const GLubyte *) "glBindVertexArray");
-	glGenBuffers = (PFNGLGENBUFFERSPROC) glXGetProcAddress( (const GLubyte *) "glGenBuffers");
-	glBindBuffer = (PFNGLBINDBUFFERPROC) glXGetProcAddress( (const GLubyte *) "glBindBuffer");
-	glBufferData = (PFNGLBUFFERDATAPROC) glXGetProcAddress( (const GLubyte *) "glBufferData");
-	glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC) glXGetProcAddress( (const GLubyte *) "glVertexAttribPointer");
-	glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) glXGetProcAddress( (const GLubyte *) "glEnableVertexAttribArray");
-	glShaderSource = (PFNGLSHADERSOURCEPROC) glXGetProcAddress( (const GLubyte *) "glShaderSource");
-	glCompileShader = (PFNGLCOMPILESHADERPROC) glXGetProcAddress( (const GLubyte *) "glCompileShader");
-	glGetShaderiv = (PFNGLGETSHADERIVPROC) glXGetProcAddress( (const GLubyte *) "glGetShaderiv");
-	glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC) glXGetProcAddress( (const GLubyte *) "glGetShaderInfoLog");
-	glGetProgramiv = (PFNGLGETPROGRAMIVPROC) glXGetProcAddress( (const GLubyte *) "glGetProgramiv");
-	glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) glXGetProcAddress( (const GLubyte *) "glGetProgramInfoLog");
-	glGetProgramPipelineiv = (PFNGLGETPROGRAMPIPELINEIVPROC) glXGetProcAddress( (const GLubyte *) "glGetProgramPipelineiv");
-	glGetProgramPipelineInfoLog = (PFNGLGETPROGRAMPIPELINEINFOLOGPROC) glXGetProcAddress( (const GLubyte *) "glGetProgramPipelineInfoLog");
-	glValidateProgramPipeline = (PFNGLVALIDATEPROGRAMPIPELINEPROC) glXGetProcAddress( (const GLubyte *) "glValidateProgramPipeline");
-	glCreateShader = (PFNGLCREATESHADERPROC) glXGetProcAddress( (const GLubyte *) "glCreateShader");
-	glCreateProgram = (PFNGLCREATEPROGRAMPROC) glXGetProcAddress( (const GLubyte *) "glCreateProgram");
-	glAttachShader = (PFNGLATTACHSHADERPROC) glXGetProcAddress( (const GLubyte *) "glAttachShader");
-	glBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC) glXGetProcAddress( (const GLubyte *) "glBindAttribLocation");
-	glLinkProgram = (PFNGLLINKPROGRAMPROC) glXGetProcAddress( (const GLubyte *) "glLinkProgram");
-	glDeleteShader = (PFNGLDELETESHADERPROC) glXGetProcAddress( (const GLubyte *) "glDeleteShader");
-	glUseProgramStages = (PFNGLUSEPROGRAMSTAGESPROC) glXGetProcAddress( (const GLubyte *) "glUseProgramStages");
-	glGenProgramPipelines = (PFNGLGENPROGRAMPIPELINESPROC) glXGetProcAddress( (const GLubyte *) "glGenProgramPipelines");
-	glBindProgramPipeline = (PFNGLBINDPROGRAMPIPELINEPROC) glXGetProcAddress( (const GLubyte *) "glBindProgramPipeline");
-	glProgramParameteri = (PFNGLPROGRAMPARAMETERIPROC) glXGetProcAddress( (const GLubyte *) "glProgramParameteri");
-	glPatchParameteri = (PFNGLPATCHPARAMETERIPROC) glXGetProcAddress( (const GLubyte *) "glPatchParameteri");
-	glPatchParameterfv = (PFNGLPATCHPARAMETERFVPROC) glXGetProcAddress( (const GLubyte *) "glPatchParameterfv");
-	glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) glXGetProcAddress( (const GLubyte *) "glGetUniformLocation");
-	glProgramUniform1fv = (PFNGLPROGRAMUNIFORM1FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniform1fv");
-	glProgramUniform3fv = (PFNGLPROGRAMUNIFORM3FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniform3fv");
-	glProgramUniformMatrix4fv = (PFNGLPROGRAMUNIFORMMATRIX4FVPROC) glXGetProcAddress( (const GLubyte *) "glProgramUniformMatrix4fv");
 }

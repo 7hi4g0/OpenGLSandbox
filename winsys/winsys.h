@@ -1,10 +1,13 @@
 #ifndef	__WINSYS_H__
 #define	__WINSYS_H__
 
-#include <GL/gl.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glcorearb.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
+extern int debug;
+extern int verbose;
 extern Display					*dpy;
 extern Window					root;
 extern XVisualInfo				*vi;
