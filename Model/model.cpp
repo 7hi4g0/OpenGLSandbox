@@ -62,6 +62,29 @@ Model *loadObjModel(const char * const filename) {
 				cerr << "Unsupported face type: " << vertices << " vertices" << endl;
 				exit(1);
 			}
+
+			std::pair<std::set<Edge>::iterator, bool> ret;
+			std::set<Edge>::iterator it;
+			Face face;
+
+			face.numEdges = vertices;
+
+			for (int i = 0; i < vertices; i++) {
+				Edge edge;
+
+				edge.v0 = &model->pos[initialIndex + i];
+				edge.v1 = &model->pos[initialIndex + (i + 1) % vertices];
+				if (model->edges.count(edge) == 1) {
+					it = model->edges.find(edge);
+				} else {
+					ret = model->edges.insert(edge);
+					it = ret.first;
+				}
+				face.pos[i] = &model->pos[initialIndex + i];
+				face.edges[i] = &*it;
+			}
+
+			model->faces.insert(face);
 		}
 	}
 
