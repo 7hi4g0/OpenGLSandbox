@@ -67,7 +67,7 @@ Model *loadObjModel(const char * const filename) {
 			std::set<Edge>::iterator it;
 			Face face;
 
-			face.numEdges = vertices;
+			face.numVertices = vertices;
 
 			for (int i = 0; i < vertices; i++) {
 				Edge edge;

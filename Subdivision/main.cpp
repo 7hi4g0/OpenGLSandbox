@@ -2,6 +2,7 @@
 #include <matrix4.h>
 #include <model.h>
 #include <pipeline.h>
+#include <subd.h>
 
 using std::cout;
 using std::cerr;
@@ -83,6 +84,7 @@ int main(int argc, char *argv[]) {
 
 	model = loadObjModel(filename);
 
+	Subdivide(model);
 	cout << model->faces.size() << endl;
 
 	vertices = model->pos.size();

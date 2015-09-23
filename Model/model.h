@@ -1,3 +1,6 @@
+#ifndef _MODEL_H_
+#define _MODEL_H_
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -22,11 +25,35 @@ struct Position {
 	friend std::ostream& operator<<(std::ostream& os, const Position& pos) {
 		os << pos.x << " " << pos.y << " " << pos.z;
 	}
+
+	bool operator==(const Position p) {
+		return x == p.x && y == p.y && z == p.z;
+	}
+
+	Position operator+(const Position p) const {
+		Position ret = *this;
+
+		ret.x += p.x;
+		ret.y += p.y;
+		ret.z += p.z;
+
+		return ret;
+	}
+
+	Position operator/(const float n) const {
+		Position ret = *this;
+
+		ret.x /= n;
+		ret.y /= n;
+		ret.z /= n;
+
+		return ret;
+	}
 };
 
 struct Edge {
-	Position *v0;
-	Position *v1;
+	const Position *v0;
+	const Position *v1;
 
 	bool operator==(Edge e) {
 		return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
@@ -42,12 +69,12 @@ struct Edge {
 };
 
 struct Face {
-	unsigned int numEdges;
+	unsigned int numVertices;
 	const Edge *edges[4];
 	const Position *pos[4];
 
 	bool operator<(const Face f) const {
-		return numEdges < f.numEdges || (numEdges == f.numEdges && edges[0] < f.edges[0]);
+		return numVertices < f.numVertices || (numVertices == f.numVertices && edges[0] < f.edges[0]);
 	}
 };
 
@@ -62,3 +89,5 @@ struct Model {
 };
 
 Model *loadObjModel(const char * const filename);
+
+#endif //_MODEL_H_
