@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(OpenGLSandbox)
 
+set(CMAKE_CXX_FLAGS "-std=gnu++11")
+
 include_directories(winsys Model Pipeline Subdivision GLMath)
 
 add_subdirectory(winsys)

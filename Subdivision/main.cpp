@@ -13,6 +13,10 @@ void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
+static Model *model;
+static ModelBuffer *modelBuffer;
+static GLuint quadIndices;
+static GLuint indices;
 static GLuint pipeline;
 static GLuint vertProgram;
 static GLuint quadProgram;
@@ -28,6 +32,16 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Position lightPos[2];
+
+void printFaceInfo() {
+	GLuint *index = &modelBuffer->quadIndices[indices - 4];
+
+	cout << endl;
+	cout << "New face" << endl;
+	for (int vert = 0; vert < 4; vert++, index++) {
+		cout << (vert + 1) << " (" << *index << ") - " << modelBuffer->pos[*index] << endl;
+	}
+}
 
 int main(int argc, char *argv[]) {
 	char opt;
@@ -77,19 +91,32 @@ int main(int argc, char *argv[]) {
 	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
-	Model *model;
+	//Model *model;
+	//ModelBuffer *modelBuffer;
 	GLuint vertices;
-	GLuint quadIndices;
+	//GLuint quadIndices;
 	GLuint triIndices;
 
 	model = loadObjModel(filename);
 
 	Subdivide(model);
-	cout << model->faces.size() << endl;
 
-	vertices = model->pos.size();
-	quadIndices = model->quadIndices.size();
-	triIndices = model->triIndices.size();
+	modelBuffer = model->genBuffer();
+
+	vertices = modelBuffer->pos.size();
+	quadIndices = modelBuffer->quadIndices.size();
+	triIndices = modelBuffer->triIndices.size();
+
+	if (verbose) {
+		cout << model->faces.size() << " faces" <<  endl;
+		cout << vertices << " vertices" << endl;
+	}
+	if (debug) {
+		cout << quadIndices << " quadIndices" << endl;
+		cout << triIndices << " triIndices" << endl;
+	}
+
+	indices = quadIndices;
 
 	GLuint vao;
 	GLuint vbo[4];
@@ -100,18 +127,18 @@ int main(int argc, char *argv[]) {
 	glGenBuffers(4, &vbo[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->pos[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(modelBuffer->pos[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->normals[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(modelBuffer->normals[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(model->quadIndices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(modelBuffer->quadIndices[0]), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(model->triIndices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(modelBuffer->triIndices[0]), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -160,7 +187,7 @@ int main(int argc, char *argv[]) {
 		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-		glDrawElements(GL_PATCHES, quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
+		glDrawElements(GL_PATCHES, indices, GL_UNSIGNED_INT, 0);	GLERR();
 		//glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
 
 		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
@@ -337,6 +364,14 @@ KEY_PRESS(keyPress) {
 		case (XK_f):
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
+			break;
+		case (XK_n):
+			if (indices == quadIndices) {
+				indices = 0;
+			} else if (indices < quadIndices) {
+				indices += 4;
+				printFaceInfo();
+			}
 			break;
 		case (XK_Up):
 			zLight += 1;
