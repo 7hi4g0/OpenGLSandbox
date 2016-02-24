@@ -1,9 +1,10 @@
-#include "winsys.h"
+#include <winsys.h>
 
 #include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
+#include <cstring>
 #include <sys/time.h>
 
 // Define se a janela deve ser fullscreen
@@ -91,20 +92,6 @@ void CreateWindow(){
 	XMapWindow(dpy, win);
 	XStoreName(dpy, win, "Simple X Window");
 	
-	//Create a XEvent to tell the Window Manager to show the window as fullscreen
-#ifdef Full
-	memset(&xev, 0, sizeof(xev));
-	xev.type = ClientMessage;
-	xev.xclient.window = win;
-	xev.xclient.message_type = XInternAtom(dpy, "_NET_WM_STATE", False);
-	xev.xclient.format = 32;
-	xev.xclient.data.l[0] = 1;
-	xev.xclient.data.l[1] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-	xev.xclient.data.l[2] = xev.xclient.data.l[3] = xev.xclient.data.l[4] = 0;
-	
-	//Send the XEvent that was just created
-	XSendEvent (dpy, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
-#endif
 
 	int context_attribs[] = {
 		GLX_CONTEXT_MAJOR_VERSION_ARB,	4,
@@ -245,7 +232,6 @@ unsigned int getTime() {
 
 void NonFullscreen() {
 	//Create a XEvent to tell the Window Manager to show the window as non-fullscreen
-#ifdef Full
 	memset(&xev, 0, sizeof(xev));
 	xev.type = ClientMessage;
 	xev.xclient.window = win;
@@ -257,5 +243,19 @@ void NonFullscreen() {
 	
 	//Send the XEvent just created
 	XSendEvent (dpy, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
-#endif
+}
+
+void Fullscreen() {
+	//Create a XEvent to tell the Window Manager to show the window as fullscreen
+	memset(&xev, 0, sizeof(xev));
+	xev.type = ClientMessage;
+	xev.xclient.window = win;
+	xev.xclient.message_type = XInternAtom(dpy, "_NET_WM_STATE", False);
+	xev.xclient.format = 32;
+	xev.xclient.data.l[0] = 1;
+	xev.xclient.data.l[1] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	xev.xclient.data.l[2] = xev.xclient.data.l[3] = xev.xclient.data.l[4] = 0;
+	
+	//Send the XEvent that was just created
+	XSendEvent (dpy, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }

@@ -58,11 +58,11 @@ Model *loadObjModel(const char * const filename) {
 
 			std::istringstream indices(line);
 			std::string index;
-			unsigned int vertices;
-			unsigned int initialIndex;
+			std::pair<PositionSet::iterator, bool> posRet;
+			PositionSet::iterator posIt;
+			FacePtr face(new Face);
 
-			vertices = 0;
-			initialIndex = model->pos.size();
+			face->numVertices = 0;
 
 			while (indices >> index) {
 				int posIndex;
@@ -70,37 +70,33 @@ Model *loadObjModel(const char * const filename) {
 
 				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
 
-				//TODO: Search for equal vertices and only include if its different
-				model->pos.push_back(std::make_shared<Position>(vertex[posIndex - 1]));
-				model->normals.push_back(std::make_shared<Position>(normals[normIndex - 1]));
+				posRet = model->pos.insert(std::make_shared<Position>(vertex[posIndex - 1]));
+				posIt = posRet.first;
+				face->pos[face->numVertices] = *posIt;
+				posRet = model->normals.insert(std::make_shared<Position>(normals[normIndex - 1]));
+				posIt = posRet.first;
+				face->normals[face->numVertices] = *posIt;
 
-				vertices++;
+				face->numVertices++;
 			}
 
-			if (vertices > 4 && vertices < 3) {
-				cerr << "Unsupported face type: " << vertices << " vertices" << endl;
+			if (face->numVertices > 4 && face->numVertices < 3) {
+				cerr << "Unsupported face type: " << face->numVertices << " vertices" << endl;
 				exit(1);
 			}
 
 			std::pair<std::set<EdgePtr>::iterator, bool> ret;
 			std::set<EdgePtr>::iterator it;
-			FacePtr face(new Face);
 
-			face->numVertices = vertices;
-
-			for (int i = 0; i < vertices; i++) {
+			for (int i = 0; i < face->numVertices; i++) {
 				std::shared_ptr<Edge> edge(new Edge);
 
-				edge->v0 = model->pos[initialIndex + i];
-				edge->v1 = model->pos[initialIndex + ((i + 1) % vertices)];
-				if (model->edges.count(edge) == 1) {
-					it = model->edges.find(edge);
-				} else {
-					ret = model->edges.insert(edge);
-					it = ret.first;
-				}
-				face->pos[i] = model->pos[initialIndex + i];
-				face->normals[i] = model->normals[initialIndex + i];
+				edge->v0 = face->pos[i];
+				edge->v1 = face->pos[(i + 1) % face->numVertices];
+
+				ret = model->edges.insert(edge);
+				it = ret.first;
+
 				face->edges[i] = *it;
 			}
 

@@ -37,6 +37,10 @@ struct Position {
 		return x == p.x && y == p.y && z == p.z;
 	}
 
+	bool operator<(const Position p) const {
+		return (x < p.x || (x == p.x && y < p.y) || (x == p.x && y == p.y && z < p.z));
+	}
+
 	Position operator+(const Position p) const {
 		Position ret = *this;
 
@@ -58,6 +62,14 @@ struct Position {
 	}
 };
 typedef std::shared_ptr<Position> PositionPtr;
+
+struct PositionCompare {
+	bool operator() (const PositionPtr& p, const PositionPtr& q) {
+		return *p < *q;
+	}
+};
+
+typedef std::set<PositionPtr, PositionCompare> PositionSet;
 
 struct Edge {
 	PositionPtr v0;
@@ -91,8 +103,8 @@ typedef std::shared_ptr<Face> FacePtr;
 
 struct Model {
 	//TODO: Do I need position, normals and edges?
-	std::vector<PositionPtr> pos;
-	std::vector<PositionPtr> normals;
+	PositionSet pos;
+	PositionSet normals;
 	std::set<EdgePtr> edges;
 	std::set<FacePtr> faces;
 

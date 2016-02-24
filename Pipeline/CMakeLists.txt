@@ -3,4 +3,4 @@ project(Pipeline)
 
 add_library(pipeline pipeline.cpp)
 
-target_link_libraries(pipeline)
+target_link_libraries(pipeline glcommon)

@@ -32,6 +32,7 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Position lightPos[2];
+static int stepByStep;
 
 void printFaceInfo() {
 	GLuint *index = &modelBuffer->quadIndices[indices - 4];
@@ -75,6 +76,8 @@ int main(int argc, char *argv[]) {
 
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
+
+	stepByStep = 0;
 
 	CreateWindow();
 
@@ -166,6 +169,13 @@ int main(int argc, char *argv[]) {
 	loop = true;
 	while(loop) {
 		TreatEvents();
+
+		if (stepByStep) {
+			indices += 4;
+			if (indices == quadIndices) {
+				stepByStep = 0;
+			}
+		}
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -372,6 +382,10 @@ KEY_PRESS(keyPress) {
 				indices += 4;
 				printFaceInfo();
 			}
+			break;
+		case (XK_m):
+			stepByStep = 1;
+			indices = 0;
 			break;
 		case (XK_Up):
 			zLight += 1;

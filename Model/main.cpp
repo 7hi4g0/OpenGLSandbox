@@ -77,15 +77,17 @@ int main(int argc, char *argv[]) {
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
 	Model *model;
+	ModelBuffer *buffer;
 	GLuint vertices;
 	GLuint quadIndices;
 	GLuint triIndices;
 
 	model = loadObjModel(filename);
+	buffer = model->genBuffer();
 
-	vertices = model->pos.size();
-	quadIndices = model->quadIndices.size();
-	triIndices = model->triIndices.size();
+	vertices = buffer->pos.size();
+	quadIndices = buffer->quadIndices.size();
+	triIndices = buffer->triIndices.size();
 
 	GLuint vao;
 	GLuint vbo[4];
@@ -96,18 +98,18 @@ int main(int argc, char *argv[]) {
 	glGenBuffers(4, &vbo[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->pos[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(buffer->pos[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(model->normals[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(buffer->normals[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(model->quadIndices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(buffer->quadIndices[0]), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(model->triIndices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(buffer->triIndices[0]), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);

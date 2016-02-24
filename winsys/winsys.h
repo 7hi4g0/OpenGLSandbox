@@ -1,23 +1,27 @@
 #ifndef	__WINSYS_H__
 #define	__WINSYS_H__
 
+#include <glcommon.h>
+
+#include <unistd.h>
+
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glcorearb.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
-extern int debug;
-extern int verbose;
-extern Display					*dpy;
-extern Window					root;
-extern XVisualInfo				*vi;
+extern int					debug;
+extern int					verbose;
+extern Display				*dpy;
+extern Window				root;
+extern XVisualInfo			*vi;
 extern Colormap				cmap;
 extern XSetWindowAttributes	swa;
-extern Window					win;
-extern GLXContext				glc;
-extern XWindowAttributes		gwa;
-extern XEvent					xev;
-extern GLXFBConfig				fbc;
+extern Window				win;
+extern GLXContext			glc;
+extern XWindowAttributes	gwa;
+extern XEvent				xev;
+extern GLXFBConfig			fbc;
 extern Atom					delete_event;
 extern Bool					loop;
 
@@ -27,6 +31,7 @@ void EndDraw();
 void TreatEvents();
 void msleep(unsigned int msec);
 unsigned int getTime();
+void Fullscreen();
 void NonFullscreen();
 
 #define KEY_PRESS(name)		void name(XKeyEvent *xkey)
