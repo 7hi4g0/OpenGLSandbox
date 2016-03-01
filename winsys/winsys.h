@@ -5,7 +5,6 @@
 
 #include <unistd.h>
 
-#define GL_GLEXT_PROTOTYPES
 #include <GL/glcorearb.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>

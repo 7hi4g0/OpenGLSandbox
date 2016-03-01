@@ -1,4 +1,4 @@
-#version 420 core
+#version 410 core
 
 uniform mat4 uModelView;
 uniform mat4 uProjection;

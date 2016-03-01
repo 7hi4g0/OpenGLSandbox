@@ -1,3 +1,4 @@
+#include <glcommon.h>
 #include <winsys.h>
 #include <matrix4.h>
 #include <model.h>
@@ -60,6 +61,10 @@ int main(int argc, char *argv[]) {
 
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
+
+#ifndef GL_GLEXT_PROTOTYPES
+	initGLFunctions();
+#endif //GL_GLEXT_PROTOTYPES
 
 	CreateWindow();
 

@@ -1,4 +1,4 @@
-#version 420 core
+#version 410 core
 
 smooth in vec4 gColor;
 
