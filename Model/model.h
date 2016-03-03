@@ -15,105 +15,103 @@ using std::cerr;
 using std::endl;
 
 struct Position;
+struct Vertex;
 struct Edge;
 struct Face;
 struct Model;
 struct ModelBuffer;
-
-struct Position {
-	float x;
-	float y;
-	float z;
-
-	friend std::istream& operator>>(std::istream& is, Position& pos) {
-		is >> pos.x >> pos.y >> pos.z;
-	}
-
-	friend std::ostream& operator<<(std::ostream& os, const Position& pos) {
-		os << pos.x << " " << pos.y << " " << pos.z;
-	}
-
-	bool operator==(const Position p) {
-		return x == p.x && y == p.y && z == p.z;
-	}
-
-	bool operator<(const Position p) const {
-		return (x < p.x || (x == p.x && y < p.y) || (x == p.x && y == p.y && z < p.z));
-	}
-
-	Position operator+(const Position p) const {
-		Position ret = *this;
-
-		ret.x += p.x;
-		ret.y += p.y;
-		ret.z += p.z;
-
-		return ret;
-	}
-
-	Position operator/(const float n) const {
-		Position ret = *this;
-
-		ret.x /= n;
-		ret.y /= n;
-		ret.z /= n;
-
-		return ret;
-	}
-};
 typedef std::shared_ptr<Position> PositionPtr;
+typedef std::shared_ptr<Vertex> VertexPtr;
+typedef std::shared_ptr<Edge> EdgePtr;
+typedef std::shared_ptr<Face> FacePtr;
 
-struct PositionCompare {
-	bool operator() (const PositionPtr& p, const PositionPtr& q) {
-		return *p < *q;
-	}
+struct Face {
+	unsigned int numVertices;
+	PositionPtr pos[4];
+	VertexPtr normals[4];
+
+	bool operator<(const Face f) const;
 };
-
-typedef std::set<PositionPtr, PositionCompare> PositionSet;
+typedef std::set<FacePtr> FaceSet;
 
 struct Edge {
 	PositionPtr v0;
 	PositionPtr v1;
 
-	bool operator==(Edge e) {
-		return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
-	}
+	FacePtr faces[2];
+	int faceCount;
 
-	bool operator!=(Edge e) {
-		return (e.v0 != v0 || e.v1 != v1) && (e.v0 != v1 || e.v1 != v0);
-	}
+	bool operator==(const Edge e) const;
+
+	bool operator!=(const Edge e) const;
 	
-	bool operator<(const Edge e) const {
-		return v0 < e.v0;
-	}
+	bool operator<(const Edge e) const;
 };
-typedef std::shared_ptr<Edge> EdgePtr;
 
-struct Face {
-	unsigned int numVertices;
-	EdgePtr edges[4];
-	PositionPtr pos[4];
-	PositionPtr normals[4];
-
-	bool operator<(const Face f) const {
-		return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
-	}
+struct EdgeCompare {
+	bool operator() (const EdgePtr& e, const EdgePtr& f);
 };
-typedef std::shared_ptr<Face> FacePtr;
+
+typedef std::set<EdgePtr, EdgeCompare> EdgeSet;
+
+struct Vertex {
+	float x;
+	float y;
+	float z;
+
+	friend std::istream& operator>>(std::istream& is, Vertex& pos);
+
+	friend std::ostream& operator<<(std::ostream& os, const Vertex& pos);
+
+	bool operator==(const Vertex p);
+
+	bool operator<(const Vertex p) const;
+
+	Vertex operator+(const Vertex p) const;
+
+	Vertex operator/(const float n) const;
+};
+
+typedef std::set<VertexPtr> VertexSet;
+
+struct Position {
+	Vertex v;
+
+	EdgeSet edges;
+	FaceSet faces;
+
+	/*
+	Position& operator=(const Position& right);
+	*/
+
+	bool operator==(const Position p);
+
+	bool operator<(const Position p) const;
+
+	Position operator+(const Position p) const;
+
+	Position operator/(const float n) const;
+};
+
+struct PositionCompare {
+	bool operator() (const PositionPtr& p, const PositionPtr& q);
+};
+
+typedef std::set<PositionPtr, PositionCompare> PositionSet;
 
 struct Model {
 	//TODO: Do I need position, normals and edges?
 	PositionSet pos;
-	PositionSet normals;
-	std::set<EdgePtr> edges;
-	std::set<FacePtr> faces;
+	VertexSet normals;
+	EdgeSet edges;
+	FaceSet faces;
 
 	ModelBuffer *genBuffer();
 };
 
 struct ModelBuffer {
-	std::vector<Position> pos;
-	std::vector<Position> normals;
+	std::vector<Vertex> pos;
+	std::vector<Vertex> normals;
 	std::vector<unsigned int> quadIndices;
 	std::vector<unsigned int> triIndices;
 };

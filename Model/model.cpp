@@ -1,8 +1,115 @@
 #include "model.h"
 
+bool Face::operator<(const Face f) const {
+	return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
+}
+
+bool Edge::operator==(const Edge e) const {
+	return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
+}
+
+bool Edge::operator!=(const Edge e) const {
+	return (e.v0 != v0 || e.v1 != v1) && (e.v0 != v1 || e.v1 != v0);
+}
+
+bool Edge::operator<(const Edge e) const {
+	//return (*v0 < *e.v0 || (*v0 == *e.v0 && *v1 < *e.v1)) && (*v0 < *e.v1 || (*v0 == *e.v1 && *v1 < *e.v0));
+	if (*v0 < *v1) {
+		if (*e.v0 < *e.v1) {
+			return (*v0 < *e.v0) || (*v0 == *e.v0 && *v1 < *e.v1);
+		} else {
+			return (*v0 < *e.v1) || (*v0 == *e.v1 && *v1 < *e.v0);
+		}
+	} else {
+		if (*e.v0 < *e.v1) {
+			return (*v1 < *e.v0) || (*v1 == *e.v0 && *v0 < *e.v1);
+		} else {
+			return (*v1 < *e.v1) || (*v1 == *e.v1 && *v0 < *e.v0);
+		}
+	}
+}
+
+bool EdgeCompare::operator() (const EdgePtr& e, const EdgePtr& f) {
+	return *e < *f;
+}
+
+std::istream& operator>>(std::istream& is, Vertex& v) {
+	is >> v.x >> v.y >> v.z;
+}
+
+std::ostream& operator<<(std::ostream& os, const Vertex& v) {
+	os << v.x << " " << v.y << " " << v.z;
+}
+
+bool Vertex::operator==(const Vertex v) {
+	return x == v.x && y == v.y && z == v.z;
+}
+
+bool Vertex::operator<(const Vertex v) const {
+	return (x < v.x || (x == v.x && y < v.y) || (x == v.x && y == v.y && z < v.z));
+}
+
+Vertex Vertex::operator+(const Vertex v) const {
+	Vertex ret = *this;
+
+	ret.x += v.x;
+	ret.y += v.y;
+	ret.z += v.z;
+
+	return ret;
+}
+
+Vertex Vertex::operator/(const float n) const {
+	Vertex ret = *this;
+
+	ret.x /= n;
+	ret.y /= n;
+	ret.z /= n;
+
+	return ret;
+}
+
+/*
+Position& Position::operator=(const Position& right) {
+	x = right.x;
+	y = right.y;
+	z = right.z;
+
+	return (*this);
+}
+*/
+
+bool Position::operator==(const Position p) {
+	return v == p.v;
+}
+
+bool Position::operator<(const Position p) const {
+	return v < p.v;
+}
+
+Position Position::operator+(const Position p) const {
+	Position ret = *this;
+
+	ret.v = ret.v + p.v;
+
+	return ret;
+}
+
+Position Position::operator/(const float n) const {
+	Position ret = *this;
+
+	ret.v = ret.v / n;
+
+	return ret;
+}
+
+bool PositionCompare::operator() (const PositionPtr& p, const PositionPtr& q) {
+	return *p < *q;
+}
+
 ModelBuffer *Model::genBuffer() {
 	ModelBuffer *buffer = new ModelBuffer;
-	std::set<FacePtr>::iterator faceIt;
+	FaceSet::iterator faceIt;
 	unsigned int index = 0;
 
 	for (faceIt = this->faces.begin(); faceIt != this->faces.end(); faceIt++) {
@@ -19,7 +126,7 @@ ModelBuffer *Model::genBuffer() {
 		}
 
 		for (int vert = 0; vert < face->numVertices; vert++) {
-			buffer->pos.push_back(*face->pos[vert]);
+			buffer->pos.push_back(face->pos[vert]->v);
 			buffer->normals.push_back(*face->normals[vert]);
 			indices->push_back(index++);
 		}
@@ -30,8 +137,8 @@ ModelBuffer *Model::genBuffer() {
 
 Model *loadObjModel(const char * const filename) {
 	Model *model = new Model;
-	std::vector<Position> vertex;
-	std::vector<Position> normals;
+	std::vector<Vertex> vertex;
+	std::vector<Vertex> normals;
 
 	std::ifstream file;
 	file.open(filename);
@@ -42,15 +149,15 @@ Model *loadObjModel(const char * const filename) {
 		if (type.compare("#") == 0) {
 			file.ignore(65535, '\n');
 		} else if (type.compare("v") == 0) {
-			Position pos;
+			Vertex vert;
 
-			file >> pos;
-			vertex.push_back(pos);
+			file >> vert;
+			vertex.push_back(vert);
 		} else if (type.compare("vn") == 0) {
-			Position pos;
+			Vertex vert;
 
-			file >> pos;
-			normals.push_back(pos);
+			file >> vert;
+			normals.push_back(vert);
 		} else if (type.compare("f") == 0) {
 			std::string line;
 
@@ -58,24 +165,19 @@ Model *loadObjModel(const char * const filename) {
 
 			std::istringstream indices(line);
 			std::string index;
-			std::pair<PositionSet::iterator, bool> posRet;
-			PositionSet::iterator posIt;
-			FacePtr face(new Face);
-
-			face->numVertices = 0;
+			FacePtr face(new Face{0});
 
 			while (indices >> index) {
 				int posIndex;
 				int normIndex;
+				Position pos;
 
 				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
 
-				posRet = model->pos.insert(std::make_shared<Position>(vertex[posIndex - 1]));
-				posIt = posRet.first;
-				face->pos[face->numVertices] = *posIt;
-				posRet = model->normals.insert(std::make_shared<Position>(normals[normIndex - 1]));
-				posIt = posRet.first;
-				face->normals[face->numVertices] = *posIt;
+				pos.v = vertex[posIndex - 1];
+				face->pos[face->numVertices] = *model->pos.insert(std::make_shared<Position>(pos)).first;
+
+				face->normals[face->numVertices] = *model->normals.insert(std::make_shared<Vertex>(normals[normIndex - 1])).first;
 
 				face->numVertices++;
 			}
@@ -85,19 +187,26 @@ Model *loadObjModel(const char * const filename) {
 				exit(1);
 			}
 
-			std::pair<std::set<EdgePtr>::iterator, bool> ret;
-			std::set<EdgePtr>::iterator it;
-
 			for (int i = 0; i < face->numVertices; i++) {
-				std::shared_ptr<Edge> edge(new Edge);
+				EdgePtr edge(new Edge{0});
 
 				edge->v0 = face->pos[i];
 				edge->v1 = face->pos[(i + 1) % face->numVertices];
 
-				ret = model->edges.insert(edge);
-				it = ret.first;
+				edge = *model->edges.insert(edge).first;
 
-				face->edges[i] = *it;
+				edge->v0->edges.insert(edge);
+				edge->v1->edges.insert(edge);
+				
+				if (edge->faceCount > 2) {
+					cerr << "Unsupported edge type!" << endl << "Edge can only belong to a maximum of two faces." << endl;
+					exit(1);
+				}
+
+				cout << edge->faceCount << endl;
+				face->pos[i]->faces.insert(face);
+				edge->faces[edge->faceCount] = face;
+				edge->faceCount++;
 			}
 
 			model->faces.insert(face);

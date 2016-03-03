@@ -27,7 +27,7 @@ static Matrix4 modelview;
 static Matrix4 projection;
 static float angle;
 static float distance;
-static Position lightPos[2];
+static Vertex lightPos[2];
 
 int main(int argc, char *argv[]) {
 	char opt;
@@ -103,11 +103,11 @@ int main(int argc, char *argv[]) {
 	glGenBuffers(4, &vbo[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(buffer->pos[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(buffer->pos[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Position), &(buffer->normals[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(buffer->normals[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
@@ -128,8 +128,8 @@ int main(int argc, char *argv[]) {
 	innerLevel = 2.0f;
 	outerLevel = 2.0f;
 
-	lightPos[0] = (Position) {1.5f, 1.5f, 0.0f};
-	lightPos[1] = (Position) {-1.5f, 1.5f, 0.0f};
+	lightPos[0] = (Vertex) {1.5f, 1.5f, 0.0f};
+	lightPos[1] = (Vertex) {-1.5f, 1.5f, 0.0f};
 	angle = 180.0f;
 	distance = 3.0f;
 	modelview.identity();
@@ -343,13 +343,13 @@ KEY_PRESS(keyPress) {
 			break;
 		case (XK_Up):
 			zLight += 1;
-			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
-			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
+			lightPos[0] = (Vertex) {1.5f, 1.5f, zLight};
+			lightPos[1] = (Vertex) {-1.5f, 1.5f, zLight};
 			break;
 		case (XK_Down):
 			zLight -= 1;
-			lightPos[0] = (Position) {1.5f, 1.5f, zLight};
-			lightPos[1] = (Position) {-1.5f, 1.5f, zLight};
+			lightPos[0] = (Vertex) {1.5f, 1.5f, zLight};
+			lightPos[1] = (Vertex) {-1.5f, 1.5f, zLight};
 			break;
 		case (XK_Left):
 			angle += 5.0f;
