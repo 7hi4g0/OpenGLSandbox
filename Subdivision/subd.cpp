@@ -22,51 +22,43 @@ void Subdivide(Model *model) {
 			EdgePtr to;
 			PositionPtr fromPos(new Position);
 			PositionPtr toPos(new Position);
-			PositionPtr normal(new Position);
+			VertexPtr normal;
 
 			subface->numVertices = 4;
 			from = face->edges[vertice];
 			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
 
 			//Vertice 1
-			newModel.pos.push_back(face->pos[vertice]);
-			subface->pos[0] = face->pos[vertice];
+			subface->pos[0] = *newModel.pos.insert(face->pos[vertice]).first;
 
 			//Vertice 2
 			*fromPos = (*from->v0 + *from->v1) / 2;
-			newModel.pos.push_back(fromPos);
-			subface->pos[1] = fromPos;
+			subface->pos[1] = *newModel.pos.insert(fromPos).first;
 
 			//Vertice 3
-			newModel.pos.push_back(facePos);
-			subface->pos[2] = facePos;
+			subface->pos[2] = *newModel.pos.insert(facePos).first;
 
 			//Vertice 4
 			*toPos = (*to->v0 + *to->v1) / 2;
-			newModel.pos.push_back(toPos);
-			subface->pos[3] = toPos;
+			subface->pos[3] = *newModel.pos.insert(toPos).first;
 
-			normal = face->normals[vertice];
+			normal = *newModel.normals.insert(face->normals[vertice]).first;
 
 			for (int i = 0; i < 4; i++) {
-				std::pair<std::set<EdgePtr>::iterator, bool> ret;
-				std::set<EdgePtr>::iterator edgeIt;
-				EdgePtr e(new Edge);
+				EdgePtr edge(new Edge{0});
 
-				e->v0 = subface->pos[i];
-				e->v1 = subface->pos[(i + 1) % 4];
+				edge->v0 = subface->pos[i];
+				edge->v1 = subface->pos[(i + 1) % 4];
 
-				//TODO: Are edges necessary in the model?
-				if (newModel.edges.count(e) == 1) {
-					edgeIt = newModel.edges.find(e);
-				} else {
-					ret = newModel.edges.insert(e);
-					edgeIt = ret.first;
-				}
-				newModel.normals.push_back(normal);
+				edge = *newModel.edges.insert(edge).first;
+
+				edge->v0->edges.insert(edge);
+				edge->v1->edges.insert(edge);
 
 				subface->normals[i] = normal;
-				subface->edges[i] = *edgeIt;
+				subface->pos[i]->faces.insert(subface);
+				edge->faces[edge->faceCount] = subface;
+				edge->faceCount++;
 			}
 
 			newModel.faces.insert(subface);
@@ -77,4 +69,65 @@ void Subdivide(Model *model) {
 }
 
 void CatmullClark(Model *model) {
+	Model newModel;
+	std::set<FacePtr>::iterator faceIt;
+
+	for (faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
+		FacePtr face = *faceIt;
+		PositionPtr facePos(new Position);
+
+		*facePos = face->facePos();
+
+		for (int vertice = 0; vertice < face->numVertices; vertice++) {
+			FacePtr subface(new Face);
+			EdgePtr from;
+			EdgePtr to;
+			PositionPtr vertexPos(new Position);
+			PositionPtr fromPos(new Position);
+			PositionPtr toPos(new Position);
+			VertexPtr normal;
+
+			subface->numVertices = 4;
+			from = face->edges[vertice];
+			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
+
+			//Vertice 1
+			*vertexPos = face->pos[vertice]->vertexPos();
+			subface->pos[0] = *newModel.pos.insert(vertexPos).first;
+
+			//Vertice 2
+			*fromPos = from->edgePos();
+			subface->pos[1] = *newModel.pos.insert(fromPos).first;
+
+			//Vertice 3
+			subface->pos[2] = *newModel.pos.insert(facePos).first;
+
+			//Vertice 4
+			*toPos = to->edgePos();
+			subface->pos[3] = *newModel.pos.insert(toPos).first;
+
+			normal = *newModel.normals.insert(face->normals[vertice]).first;
+
+			for (int i = 0; i < 4; i++) {
+				EdgePtr edge(new Edge{0});
+
+				edge->v0 = subface->pos[i];
+				edge->v1 = subface->pos[(i + 1) % 4];
+
+				edge = *newModel.edges.insert(edge).first;
+
+				edge->v0->edges.insert(edge);
+				edge->v1->edges.insert(edge);
+
+				subface->edges[i] = edge;
+				subface->normals[i] = normal;
+				subface->pos[i]->faces.insert(subface);
+				edge->faces[edge->faceCount++] = subface;
+			}
+
+			newModel.faces.insert(subface);
+		}
+	}
+
+	*model = newModel;
 }

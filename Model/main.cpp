@@ -62,9 +62,7 @@ int main(int argc, char *argv[]) {
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
 
-#ifndef GL_GLEXT_PROTOTYPES
 	initGLFunctions();
-#endif //GL_GLEXT_PROTOTYPES
 
 	CreateWindow();
 

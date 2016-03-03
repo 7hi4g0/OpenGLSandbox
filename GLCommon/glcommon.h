@@ -52,9 +52,14 @@ extern	PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
 extern	PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
 extern	PFNGLVERTEXATTRIBPOINTERPROC 		glVertexAttribPointer;
 
+void initGLFunctions();
+
+#else
+
+void initGLFunctions() {}
+
 #endif //GL_GLEXT_PROTOTYPES
 
 void checkGLErr(const char *file, int line);
-void initGLFunctions();
 
 #endif //_GLCOMMON_H_

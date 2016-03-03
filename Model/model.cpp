@@ -4,6 +4,19 @@ bool Face::operator<(const Face f) const {
 	return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
 }
 
+Position Face::facePos() const {
+	Position facePos;
+
+	facePos = *pos[0] + *pos[1] + *pos[2];
+
+	if (numVertices == 4) {
+		facePos = facePos + *pos[3];
+	}
+	facePos = facePos / numVertices;
+
+	return facePos;
+}
+
 bool Edge::operator==(const Edge e) const {
 	return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
 }
@@ -27,6 +40,22 @@ bool Edge::operator<(const Edge e) const {
 			return (*v1 < *e.v1) || (*v1 == *e.v1 && *v0 < *e.v0);
 		}
 	}
+}
+
+Position Edge::edgePos() const {
+	Position edgePos;
+
+	edgePos = (*v0 + *v1 + faces[0]->facePos() + faces[1]->facePos()) / 4;
+
+	return edgePos;
+}
+
+Position Edge::midPos() const {
+	Position midPos;
+
+	midPos = (*v0 + *v1) / 2;
+
+	return midPos;
 }
 
 bool EdgeCompare::operator() (const EdgePtr& e, const EdgePtr& f) {
@@ -69,15 +98,21 @@ Vertex Vertex::operator/(const float n) const {
 	return ret;
 }
 
-/*
+Vertex Vertex::operator*(const float n) const {
+	Vertex ret = *this;
+
+	ret.x *= n;
+	ret.y *= n;
+	ret.z *= n;
+
+	return ret;
+}
+
 Position& Position::operator=(const Position& right) {
-	x = right.x;
-	y = right.y;
-	z = right.z;
+	v = right.v;
 
 	return (*this);
 }
-*/
 
 bool Position::operator==(const Position p) {
 	return v == p.v;
@@ -101,6 +136,38 @@ Position Position::operator/(const float n) const {
 	ret.v = ret.v / n;
 
 	return ret;
+}
+
+Position Position::operator*(const float n) const {
+	Position ret = *this;
+
+	ret.v = ret.v * n;
+
+	return ret;
+}
+
+Position Position::vertexPos() const {
+	Position vertexPos;
+	int degree;
+
+	degree = faces.size();
+
+	vertexPos = *this * (degree - 3);
+
+	EdgeSet::iterator edgeIt;
+	FaceSet::iterator faceIt;
+
+	for (faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
+		vertexPos = vertexPos + ((*faceIt)->facePos() / degree);
+	}
+
+	for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+		vertexPos = vertexPos + ((*edgeIt)->midPos() * 2.0f / degree);
+	}
+
+	vertexPos = vertexPos / degree;
+
+	return vertexPos;
 }
 
 bool PositionCompare::operator() (const PositionPtr& p, const PositionPtr& q) {
@@ -197,16 +264,16 @@ Model *loadObjModel(const char * const filename) {
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);
-				
-				if (edge->faceCount > 2) {
+
+				face->edges[i] = edge;
+				face->pos[i]->faces.insert(face);
+
+				if (edge->faceCount >= 2) {
 					cerr << "Unsupported edge type!" << endl << "Edge can only belong to a maximum of two faces." << endl;
 					exit(1);
 				}
 
-				cout << edge->faceCount << endl;
-				face->pos[i]->faces.insert(face);
-				edge->faces[edge->faceCount] = face;
-				edge->faceCount++;
+				edge->faces[edge->faceCount++] = face;
 			}
 
 			model->faces.insert(face);
