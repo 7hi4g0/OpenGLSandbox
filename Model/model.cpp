@@ -45,7 +45,13 @@ bool Edge::operator<(const Edge e) const {
 Position Edge::edgePos() const {
 	Position edgePos;
 
-	edgePos = (*v0 + *v1 + faces[0]->facePos() + faces[1]->facePos()) / 4;
+	edgePos = *v0 + *v1;
+
+	if (faceCount == 1) {
+		edgePos = edgePos / 2;
+	} else {
+		edgePos = (edgePos + faces[0]->facePos() + faces[1]->facePos()) / 4;
+	}
 
 	return edgePos;
 }
@@ -148,24 +154,38 @@ Position Position::operator*(const float n) const {
 
 Position Position::vertexPos() const {
 	Position vertexPos;
+	EdgeSet::iterator edgeIt;
+	FaceSet::iterator faceIt;
 	int degree;
 
 	degree = faces.size();
 
-	vertexPos = *this * (degree - 3);
+	vertexPos = *this;
 
-	EdgeSet::iterator edgeIt;
-	FaceSet::iterator faceIt;
+	if (edges.size() > degree) {
+		degree = 1;
 
-	for (faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
-		vertexPos = vertexPos + ((*faceIt)->facePos() / degree);
+		for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+			if ((*edgeIt)->faceCount == 1) {
+				vertexPos = vertexPos + (*edgeIt)->midPos();
+				degree++;
+			}
+		}
+
+		vertexPos = vertexPos / degree;
+	} else {
+		vertexPos = vertexPos * (degree - 3);
+
+		for (faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
+			vertexPos = vertexPos + ((*faceIt)->facePos() / degree);
+		}
+
+		for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+			vertexPos = vertexPos + ((*edgeIt)->midPos() * 2.0f / degree);
+		}
+
+		vertexPos = vertexPos / degree;
 	}
-
-	for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
-		vertexPos = vertexPos + ((*edgeIt)->midPos() * 2.0f / degree);
-	}
-
-	vertexPos = vertexPos / degree;
 
 	return vertexPos;
 }

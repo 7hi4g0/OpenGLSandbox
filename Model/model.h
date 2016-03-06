@@ -31,7 +31,7 @@ struct Face {
 	VertexPtr normals[4];
 	EdgePtr edges[4];
 
-	bool operator<(const Face f) const;
+	bool operator<(const Face) const;
 
 	Position facePos() const;
 };
@@ -44,11 +44,11 @@ struct Edge {
 	FacePtr faces[2];
 	int faceCount;
 
-	bool operator==(const Edge e) const;
+	bool operator==(const Edge) const;
 
-	bool operator!=(const Edge e) const;
+	bool operator!=(const Edge) const;
 	
-	bool operator<(const Edge e) const;
+	bool operator<(const Edge) const;
 
 	Position edgePos() const;
 
@@ -56,7 +56,7 @@ struct Edge {
 };
 
 struct EdgeCompare {
-	bool operator() (const EdgePtr& e, const EdgePtr& f);
+	bool operator() (const EdgePtr&, const EdgePtr&);
 };
 
 typedef std::set<EdgePtr, EdgeCompare> EdgeSet;
@@ -66,19 +66,19 @@ struct Vertex {
 	float y;
 	float z;
 
-	friend std::istream& operator>>(std::istream& is, Vertex& pos);
+	friend std::istream& operator>>(std::istream&, Vertex&);
 
-	friend std::ostream& operator<<(std::ostream& os, const Vertex& pos);
+	friend std::ostream& operator<<(std::ostream&, const Vertex&);
 
-	bool operator==(const Vertex p);
+	bool operator==(const Vertex);
 
-	bool operator<(const Vertex p) const;
+	bool operator<(const Vertex) const;
 
-	Vertex operator+(const Vertex p) const;
+	Vertex operator+(const Vertex) const;
 
-	Vertex operator/(const float n) const;
+	Vertex operator/(const float) const;
 
-	Vertex operator*(const float n) const;
+	Vertex operator*(const float) const;
 };
 
 typedef std::set<VertexPtr> VertexSet;
@@ -89,23 +89,23 @@ struct Position {
 	EdgeSet edges;
 	FaceSet faces;
 
-	Position& operator=(const Position& right);
+	Position& operator=(const Position&);
 
-	bool operator==(const Position p);
+	bool operator==(const Position);
 
-	bool operator<(const Position p) const;
+	bool operator<(const Position) const;
 
-	Position operator+(const Position p) const;
+	Position operator+(const Position) const;
 
-	Position operator/(const float n) const;
+	Position operator/(const float) const;
 
-	Position operator*(const float n) const;
+	Position operator*(const float) const;
 
 	Position vertexPos() const;
 };
 
 struct PositionCompare {
-	bool operator() (const PositionPtr& p, const PositionPtr& q);
+	bool operator() (const PositionPtr&, const PositionPtr&);
 };
 
 typedef std::set<PositionPtr, PositionCompare> PositionSet;

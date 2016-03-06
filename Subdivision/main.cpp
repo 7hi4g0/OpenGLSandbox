@@ -106,8 +106,8 @@ int main(int argc, char *argv[]) {
 	model = loadObjModel(filename);
 
 	CatmullClark(model);
-	CatmullClark(model);
-	CatmullClark(model);
+	//CatmullClark(model);
+	//CatmullClark(model);
 
 	modelBuffer = model->genBuffer();
 
