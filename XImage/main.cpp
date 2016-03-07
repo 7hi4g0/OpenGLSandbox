@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <bitset>
 
 using std::cout;
 using std::endl;

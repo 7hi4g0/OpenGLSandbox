@@ -1,3 +1,4 @@
+#include <glcommon.h>
 #include <winsys.h>
 #include <pipeline.h>
 
@@ -65,6 +66,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	TreatKeyPress = keyPress;
+
+	initGLFunctions();
 
 	CreateWindow();
 
