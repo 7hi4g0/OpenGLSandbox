@@ -94,6 +94,16 @@ Vertex Vertex::operator+(const Vertex v) const {
 	return ret;
 }
 
+Vertex Vertex::operator-(const Vertex v) const {
+	Vertex ret = *this;
+
+	ret.x -= v.x;
+	ret.y -= v.y;
+	ret.z -= v.z;
+
+	return ret;
+}
+
 Vertex Vertex::operator/(const float n) const {
 	Vertex ret = *this;
 
@@ -112,6 +122,44 @@ Vertex Vertex::operator*(const float n) const {
 	ret.z *= n;
 
 	return ret;
+}
+
+Vertex Vertex::cross(const Vertex v) const {
+	Vertex ret;
+	Vertex u = *this;
+
+	ret.x = (u.y * v.z) - (u.z * v.y);
+	ret.y = (u.z * v.x) - (u.x * v.z);
+	ret.z = (u.x * v.y) - (u.y * v.x);
+
+	return ret;
+}
+
+Vertex Vertex::normalize() const {
+	Vertex ret = *this;
+	float length;
+
+	length = sqrt((ret.x * ret.x) + (ret.y * ret.y) + (ret.z * ret.z));
+
+	ret.x /= length;
+	ret.y /= length;
+	ret.z /= length;
+
+	return ret;
+}
+
+Vertex Vertex::normal(const Vertex& point, const Vertex& next, const Vertex& previous) {
+	Vertex edge1;
+	Vertex edge2;
+
+	edge1 = next - point;
+	edge2 = previous - point;
+
+	return edge1.cross(edge2).normalize();
+}
+
+bool VertexCompare::operator() (const VertexPtr& u, const VertexPtr& v) {
+	return *u < *v;
 }
 
 Position& Position::operator=(const Position& right) {

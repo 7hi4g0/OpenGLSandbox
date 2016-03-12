@@ -22,7 +22,7 @@ void Subdivide(Model *model) {
 			EdgePtr to;
 			PositionPtr fromPos(new Position);
 			PositionPtr toPos(new Position);
-			VertexPtr normal;
+			VertexPtr normal{new Vertex};
 
 			subface->numVertices = 4;
 			from = face->edges[vertice];
@@ -42,7 +42,8 @@ void Subdivide(Model *model) {
 			*toPos = (*to->v0 + *to->v1) / 2;
 			subface->pos[3] = *newModel.pos.insert(toPos).first;
 
-			normal = *newModel.normals.insert(face->normals[vertice]).first;
+			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
+			normal = *newModel.normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge(new Edge{0});
@@ -85,7 +86,7 @@ void CatmullClark(Model *model) {
 			PositionPtr vertexPos(new Position);
 			PositionPtr fromPos(new Position);
 			PositionPtr toPos(new Position);
-			VertexPtr normal;
+			VertexPtr normal{new Vertex};
 
 			subface->numVertices = 4;
 			from = face->edges[vertice];
@@ -106,7 +107,8 @@ void CatmullClark(Model *model) {
 			*toPos = to->edgePos();
 			subface->pos[3] = *newModel.pos.insert(toPos).first;
 
-			normal = *newModel.normals.insert(face->normals[vertice]).first;
+			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
+			normal = *newModel.normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge(new Edge{0});

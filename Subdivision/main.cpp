@@ -9,15 +9,20 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+void setBuffer(Model*);
 void setPipeline();
 void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
 static Model *model;
+static Model *subModel;
 static ModelBuffer *modelBuffer;
 static GLuint quadIndices;
+static GLuint triIndices;
 static GLuint indices;
+static GLuint vao;
+static GLuint vbo[4];
 static GLuint pipeline;
 static GLuint vertProgram;
 static GLuint quadProgram;
@@ -97,59 +102,15 @@ int main(int argc, char *argv[]) {
 	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
-	//Model *model;
-	//ModelBuffer *modelBuffer;
-	GLuint vertices;
-	//GLuint quadIndices;
-	GLuint triIndices;
-
 	model = loadObjModel(filename);
-
-	CatmullClark(model);
-	//CatmullClark(model);
-	//CatmullClark(model);
-
-	modelBuffer = model->genBuffer();
-
-	vertices = modelBuffer->pos.size();
-	quadIndices = modelBuffer->quadIndices.size();
-	triIndices = modelBuffer->triIndices.size();
-
-	if (verbose) {
-		cout << model->faces.size() << " faces" <<  endl;
-		cout << vertices << " vertices" << endl;
-	}
-	if (debug) {
-		cout << quadIndices << " quadIndices" << endl;
-		cout << triIndices << " triIndices" << endl;
-	}
-
-	indices = quadIndices;
-
-	GLuint vao;
-	GLuint vbo[4];
+	subModel = model;
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glGenBuffers(4, &vbo[0]);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(modelBuffer->pos[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(modelBuffer->normals[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(modelBuffer->quadIndices[0]), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(modelBuffer->triIndices[0]), GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	setBuffer(subModel);
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -226,6 +187,46 @@ int main(int argc, char *argv[]) {
 
 	DestroyWindow();
 	return 0;
+}
+
+void setBuffer(Model *model) {
+	GLuint vertices;
+
+	modelBuffer = model->genBuffer();
+
+	vertices = modelBuffer->pos.size();
+	quadIndices = modelBuffer->quadIndices.size();
+	triIndices = modelBuffer->triIndices.size();
+
+	if (verbose) {
+		cout << model->faces.size() << " faces" <<  endl;
+		cout << vertices << " vertices" << endl;
+	}
+	if (debug) {
+		cout << quadIndices << " quadIndices" << endl;
+		cout << triIndices << " triIndices" << endl;
+	}
+
+	indices = quadIndices;
+
+	glBindVertexArray(vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(modelBuffer->pos[0]), GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(modelBuffer->normals[0]), GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(modelBuffer->quadIndices[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(modelBuffer->triIndices[0]), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 }
 
 void setPipeline() {
@@ -330,8 +331,9 @@ void updateModelView() {
 KEY_PRESS(keyPress) {
 	static unsigned int geometry = 0;
 	static float zLight = 0;
+	KeySym keysym;
 
-	switch(XLookupKeysym(xkey, 0)) {
+	switch(keysym = XLookupKeysym(xkey, 0)) {
 		case (XK_o):
 			if (outerLevel < maxTessLevel) {
 				outerLevel += 1;
@@ -392,6 +394,10 @@ KEY_PRESS(keyPress) {
 			stepByStep = 1;
 			indices = 0;
 			break;
+		case (XK_Return):
+			CatmullClark(subModel);
+			setBuffer(subModel);
+			break;
 		case (XK_Up):
 			zLight += 1;
 			lightPos[0] = (Vertex) {1.5f, 1.5f, zLight};
@@ -414,6 +420,9 @@ KEY_PRESS(keyPress) {
 			loop = false;
 			break;
 		default:
+			if (verbose) {
+				cerr << "Untreated " << XKeysymToString(keysym) << " captured." << endl;
+			}
 			break;
 	};
 }

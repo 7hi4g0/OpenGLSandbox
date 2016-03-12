@@ -9,6 +9,7 @@
 #include <set>
 #include <memory>
 #include <cstdlib>
+#include <cmath>
 
 using std::cout;
 using std::cerr;
@@ -76,9 +77,21 @@ struct Vertex {
 
 	Vertex operator+(const Vertex) const;
 
+	Vertex operator-(const Vertex) const;
+
 	Vertex operator/(const float) const;
 
 	Vertex operator*(const float) const;
+
+	Vertex cross(const Vertex) const;
+
+	Vertex normalize() const;
+
+	static Vertex normal(const Vertex&, const Vertex&, const Vertex&);
+};
+
+struct VertexCompare {
+	bool operator() (const VertexPtr&, const VertexPtr&);
 };
 
 typedef std::set<VertexPtr> VertexSet;
