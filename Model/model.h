@@ -26,15 +26,41 @@ typedef std::shared_ptr<Vertex> VertexPtr;
 typedef std::shared_ptr<Edge> EdgePtr;
 typedef std::shared_ptr<Face> FacePtr;
 
+struct Vertex {
+	float x;
+	float y;
+	float z;
+
+	friend std::istream& operator>>(std::istream&, Vertex&);
+	friend std::ostream& operator<<(std::ostream&, const Vertex&);
+
+	bool operator==(const Vertex);
+	bool operator<(const Vertex) const;
+	Vertex operator+(const Vertex) const;
+	Vertex operator-(const Vertex) const;
+	Vertex operator/(const float) const;
+	Vertex operator*(const float) const;
+
+	Vertex cross(const Vertex) const;
+	Vertex normalize() const;
+	static Vertex normal(const Vertex&, const Vertex&, const Vertex&);
+};
+
+struct VertexCompare {
+	bool operator() (const VertexPtr&, const VertexPtr&);
+};
+
+typedef std::set<VertexPtr> VertexSet;
+
 struct Face {
-	unsigned int numVertices;
+	unsigned int numVertices = 0;
 	PositionPtr pos[4];
 	VertexPtr normals[4];
 	EdgePtr edges[4];
 
 	bool operator<(const Face) const;
 
-	Position facePos() const;
+	Vertex facePos() const;
 };
 typedef std::set<FacePtr> FaceSet;
 
@@ -46,14 +72,11 @@ struct Edge {
 	int faceCount;
 
 	bool operator==(const Edge) const;
-
 	bool operator!=(const Edge) const;
-	
 	bool operator<(const Edge) const;
 
-	Position edgePos() const;
-
-	Position midPos() const;
+	Vertex edgePos() const;
+	Vertex midPos() const;
 };
 
 struct EdgeCompare {
@@ -62,40 +85,6 @@ struct EdgeCompare {
 
 typedef std::set<EdgePtr, EdgeCompare> EdgeSet;
 
-struct Vertex {
-	float x;
-	float y;
-	float z;
-
-	friend std::istream& operator>>(std::istream&, Vertex&);
-
-	friend std::ostream& operator<<(std::ostream&, const Vertex&);
-
-	bool operator==(const Vertex);
-
-	bool operator<(const Vertex) const;
-
-	Vertex operator+(const Vertex) const;
-
-	Vertex operator-(const Vertex) const;
-
-	Vertex operator/(const float) const;
-
-	Vertex operator*(const float) const;
-
-	Vertex cross(const Vertex) const;
-
-	Vertex normalize() const;
-
-	static Vertex normal(const Vertex&, const Vertex&, const Vertex&);
-};
-
-struct VertexCompare {
-	bool operator() (const VertexPtr&, const VertexPtr&);
-};
-
-typedef std::set<VertexPtr> VertexSet;
-
 struct Position {
 	Vertex v;
 
@@ -103,18 +92,16 @@ struct Position {
 	FaceSet faces;
 
 	Position& operator=(const Position&);
-
+	Position& operator=(const Vertex&);
 	bool operator==(const Position);
-
 	bool operator<(const Position) const;
-
 	Position operator+(const Position) const;
-
+	Position operator-(const Position) const;
 	Position operator/(const float) const;
-
 	Position operator*(const float) const;
 
-	Position vertexPos() const;
+	Vertex vertexPos() const;
+	Vertex vertexNormal() const;
 };
 
 struct PositionCompare {
@@ -141,7 +128,7 @@ struct Model {
 	EdgeSet edges;
 	FaceSet faces;
 
-	ModelBuffer *genBuffer();
+	ModelBuffer *genBuffer(bool = false);
 };
 
 struct ModelBuffer {

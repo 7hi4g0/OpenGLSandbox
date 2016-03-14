@@ -1,73 +1,5 @@
 #include "model.h"
 
-bool Face::operator<(const Face f) const {
-	return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
-}
-
-Position Face::facePos() const {
-	Position facePos;
-
-	facePos = *pos[0] + *pos[1] + *pos[2];
-
-	if (numVertices == 4) {
-		facePos = facePos + *pos[3];
-	}
-	facePos = facePos / numVertices;
-
-	return facePos;
-}
-
-bool Edge::operator==(const Edge e) const {
-	return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
-}
-
-bool Edge::operator!=(const Edge e) const {
-	return (e.v0 != v0 || e.v1 != v1) && (e.v0 != v1 || e.v1 != v0);
-}
-
-bool Edge::operator<(const Edge e) const {
-	//return (*v0 < *e.v0 || (*v0 == *e.v0 && *v1 < *e.v1)) && (*v0 < *e.v1 || (*v0 == *e.v1 && *v1 < *e.v0));
-	if (*v0 < *v1) {
-		if (*e.v0 < *e.v1) {
-			return (*v0 < *e.v0) || (*v0 == *e.v0 && *v1 < *e.v1);
-		} else {
-			return (*v0 < *e.v1) || (*v0 == *e.v1 && *v1 < *e.v0);
-		}
-	} else {
-		if (*e.v0 < *e.v1) {
-			return (*v1 < *e.v0) || (*v1 == *e.v0 && *v0 < *e.v1);
-		} else {
-			return (*v1 < *e.v1) || (*v1 == *e.v1 && *v0 < *e.v0);
-		}
-	}
-}
-
-Position Edge::edgePos() const {
-	Position edgePos;
-
-	edgePos = *v0 + *v1;
-
-	if (faceCount == 1) {
-		edgePos = edgePos / 2;
-	} else {
-		edgePos = (edgePos + faces[0]->facePos() + faces[1]->facePos()) / 4;
-	}
-
-	return edgePos;
-}
-
-Position Edge::midPos() const {
-	Position midPos;
-
-	midPos = (*v0 + *v1) / 2;
-
-	return midPos;
-}
-
-bool EdgeCompare::operator() (const EdgePtr& e, const EdgePtr& f) {
-	return *e < *f;
-}
-
 std::istream& operator>>(std::istream& is, Vertex& v) {
 	is >> v.x >> v.y >> v.z;
 }
@@ -162,8 +94,82 @@ bool VertexCompare::operator() (const VertexPtr& u, const VertexPtr& v) {
 	return *u < *v;
 }
 
+bool Face::operator<(const Face f) const {
+	return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
+}
+
+Vertex Face::facePos() const {
+	Vertex facePos;
+
+	facePos = pos[0]->v + pos[1]->v + pos[2]->v;
+
+	if (numVertices == 4) {
+		facePos = facePos + pos[3]->v;
+	}
+	facePos = facePos / numVertices;
+
+	return facePos;
+}
+
+bool Edge::operator==(const Edge e) const {
+	return (e.v0 == v0 && e.v1 == v1) || (e.v0 == v1 && e.v1 == v0);
+}
+
+bool Edge::operator!=(const Edge e) const {
+	return (e.v0 != v0 || e.v1 != v1) && (e.v0 != v1 || e.v1 != v0);
+}
+
+bool Edge::operator<(const Edge e) const {
+	//return (*v0 < *e.v0 || (*v0 == *e.v0 && *v1 < *e.v1)) && (*v0 < *e.v1 || (*v0 == *e.v1 && *v1 < *e.v0));
+	if (*v0 < *v1) {
+		if (*e.v0 < *e.v1) {
+			return (*v0 < *e.v0) || (*v0 == *e.v0 && *v1 < *e.v1);
+		} else {
+			return (*v0 < *e.v1) || (*v0 == *e.v1 && *v1 < *e.v0);
+		}
+	} else {
+		if (*e.v0 < *e.v1) {
+			return (*v1 < *e.v0) || (*v1 == *e.v0 && *v0 < *e.v1);
+		} else {
+			return (*v1 < *e.v1) || (*v1 == *e.v1 && *v0 < *e.v0);
+		}
+	}
+}
+
+Vertex Edge::edgePos() const {
+	Vertex edgePos;
+
+	edgePos = v0->v + v1->v;
+
+	if (faceCount == 1) {
+		edgePos = edgePos / 2;
+	} else {
+		edgePos = (edgePos + faces[0]->facePos() + faces[1]->facePos()) / 4;
+	}
+
+	return edgePos;
+}
+
+Vertex Edge::midPos() const {
+	Vertex midPos;
+
+	midPos = (v0->v + v1->v) / 2;
+
+	return midPos;
+}
+
+bool EdgeCompare::operator() (const EdgePtr& e, const EdgePtr& f) {
+	return *e < *f;
+}
+
 Position& Position::operator=(const Position& right) {
 	v = right.v;
+
+	return (*this);
+}
+
+Position& Position::operator=(const Vertex& right) {
+	v = right;
 
 	return (*this);
 }
@@ -184,6 +190,14 @@ Position Position::operator+(const Position p) const {
 	return ret;
 }
 
+Position Position::operator-(const Position p) const {
+	Position ret = *this;
+
+	ret.v = ret.v - p.v;
+
+	return ret;
+}
+
 Position Position::operator/(const float n) const {
 	Position ret = *this;
 
@@ -200,15 +214,15 @@ Position Position::operator*(const float n) const {
 	return ret;
 }
 
-Position Position::vertexPos() const {
-	Position vertexPos;
+Vertex Position::vertexPos() const {
+	Vertex vertexPos;
 	EdgeSet::iterator edgeIt;
 	FaceSet::iterator faceIt;
 	int degree;
 
 	degree = faces.size();
 
-	vertexPos = *this;
+	vertexPos = this->v;
 
 	if (edges.size() > degree) {
 		degree = 1;
@@ -222,14 +236,14 @@ Position Position::vertexPos() const {
 
 		vertexPos = vertexPos / degree;
 	} else {
-		vertexPos = vertexPos * (degree - 3);
+		vertexPos = vertexPos * (degree - 2);
 
 		for (faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
 			vertexPos = vertexPos + ((*faceIt)->facePos() / degree);
 		}
 
 		for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
-			vertexPos = vertexPos + ((*edgeIt)->midPos() * 2.0f / degree);
+			vertexPos = vertexPos + (((*edgeIt)->v0->v + (*edgeIt)->v1->v - this->v) / degree);
 		}
 
 		vertexPos = vertexPos / degree;
@@ -238,11 +252,23 @@ Position Position::vertexPos() const {
 	return vertexPos;
 }
 
+Vertex Position::vertexNormal() const {
+	Vertex normal{0};
+
+	for (auto face : this->faces) {
+		normal = normal + *face->normals[0];
+	}
+
+	normal = normal / this->faces.size();
+
+	return normal;
+}
+
 bool PositionCompare::operator() (const PositionPtr& p, const PositionPtr& q) {
 	return *p < *q;
 }
 
-ModelBuffer *Model::genBuffer() {
+ModelBuffer *Model::genBuffer(bool smooth) {
 	ModelBuffer *buffer = new ModelBuffer;
 	FaceSet::iterator faceIt;
 	unsigned int index = 0;
@@ -262,7 +288,11 @@ ModelBuffer *Model::genBuffer() {
 
 		for (int vert = 0; vert < face->numVertices; vert++) {
 			buffer->pos.push_back(face->pos[vert]->v);
-			buffer->normals.push_back(*face->normals[vert]);
+			if (smooth) {
+				buffer->normals.push_back(face->pos[vert]->vertexNormal());
+			} else {
+				buffer->normals.push_back(*face->normals[vert]);
+			}
 			indices->push_back(index++);
 		}
 	}
@@ -300,7 +330,7 @@ Model *loadObjModel(const char * const filename) {
 
 			std::istringstream indices(line);
 			std::string index;
-			FacePtr face(new Face{0});
+			FacePtr face(new Face);
 
 			while (indices >> index) {
 				int posIndex;

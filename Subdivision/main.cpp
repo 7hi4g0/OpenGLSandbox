@@ -39,6 +39,7 @@ static float angle;
 static float distance;
 static Vertex lightPos[2];
 static int stepByStep;
+static bool smoothNormals;
 
 void printFaceInfo() {
 	GLuint *index = &modelBuffer->quadIndices[indices - 4];
@@ -84,6 +85,7 @@ int main(int argc, char *argv[]) {
 	TreatButtonPress = buttonPress;
 
 	stepByStep = 0;
+	smoothNormals = false;
 
 	initGLFunctions();
 
@@ -103,7 +105,8 @@ int main(int argc, char *argv[]) {
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
 	model = loadObjModel(filename);
-	subModel = model;
+	subModel = new Model;
+	*subModel = *model;
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -192,7 +195,8 @@ int main(int argc, char *argv[]) {
 void setBuffer(Model *model) {
 	GLuint vertices;
 
-	modelBuffer = model->genBuffer();
+	delete modelBuffer;
+	modelBuffer = model->genBuffer(smoothNormals);
 
 	vertices = modelBuffer->pos.size();
 	quadIndices = modelBuffer->quadIndices.size();
@@ -332,6 +336,8 @@ KEY_PRESS(keyPress) {
 	static unsigned int geometry = 0;
 	static float zLight = 0;
 	KeySym keysym;
+	unsigned int currentTime;
+	unsigned int elapsedTime;
 
 	switch(keysym = XLookupKeysym(xkey, 0)) {
 		case (XK_o):
@@ -377,10 +383,14 @@ KEY_PRESS(keyPress) {
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
 			glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 			geometry = 1;
+			smoothNormals = true;
+			setBuffer(subModel);
 			break;
 		case (XK_f):
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
+			smoothNormals = false;
+			setBuffer(subModel);
 			break;
 		case (XK_n):
 			if (indices == quadIndices) {
@@ -395,8 +405,23 @@ KEY_PRESS(keyPress) {
 			indices = 0;
 			break;
 		case (XK_Return):
+			if (verbose) {
+				currentTime = getTime();
+			}
 			CatmullClark(subModel);
+			if (verbose) {
+				elapsedTime = currentTime;
+				currentTime = getTime();
+				elapsedTime = currentTime - elapsedTime;
+				cout << elapsedTime << " ms - Catmull-Clark" << endl;
+			}
 			setBuffer(subModel);
+			if (verbose) {
+				elapsedTime = currentTime;
+				currentTime = getTime();
+				elapsedTime = currentTime - elapsedTime;
+				cout << elapsedTime << " ms - Generating Buffer" << endl;
+			}
 			break;
 		case (XK_Up):
 			zLight += 1;
