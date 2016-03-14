@@ -21,10 +21,10 @@ struct Edge;
 struct Face;
 struct Model;
 struct ModelBuffer;
-typedef std::shared_ptr<Position> PositionPtr;
-typedef std::shared_ptr<Vertex> VertexPtr;
-typedef std::shared_ptr<Edge> EdgePtr;
-typedef std::shared_ptr<Face> FacePtr;
+typedef Position* PositionPtr;
+typedef Vertex* VertexPtr;
+typedef Edge* EdgePtr;
+typedef Face* FacePtr;
 
 struct Vertex {
 	float x;

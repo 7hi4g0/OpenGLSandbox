@@ -95,7 +95,7 @@ bool VertexCompare::operator() (const VertexPtr& u, const VertexPtr& v) {
 }
 
 bool Face::operator<(const Face f) const {
-	return numVertices < f.numVertices || (numVertices == f.numVertices && pos[0].get() < f.pos[0].get());
+	return numVertices < f.numVertices || (numVertices == f.numVertices && *pos[0] < *f.pos[0]);
 }
 
 Vertex Face::facePos() const {
@@ -335,14 +335,16 @@ Model *loadObjModel(const char * const filename) {
 			while (indices >> index) {
 				int posIndex;
 				int normIndex;
-				Position pos;
+				PositionPtr pos(new Position);
+				VertexPtr normal(new Vertex{0});
 
 				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
 
-				pos.v = vertex[posIndex - 1];
-				face->pos[face->numVertices] = *model->pos.insert(std::make_shared<Position>(pos)).first;
+				pos->v = vertex[posIndex - 1];
+				face->pos[face->numVertices] = *model->pos.insert(pos).first;
 
-				face->normals[face->numVertices] = *model->normals.insert(std::make_shared<Vertex>(normals[normIndex - 1])).first;
+				*normal = normals[normIndex - 1];
+				face->normals[face->numVertices] = *model->normals.insert(normal).first;
 
 				face->numVertices++;
 			}
