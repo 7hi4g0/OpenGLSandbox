@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <unordered_set>
 #include <memory>
 #include <cstdlib>
 #include <cmath>
@@ -46,11 +47,13 @@ struct Vertex {
 	static Vertex normal(const Vertex&, const Vertex&, const Vertex&);
 };
 
-struct VertexCompare {
-	bool operator() (const VertexPtr&, const VertexPtr&);
+struct VertexHash {
+	size_t operator() (const VertexPtr) const;
 };
-
-typedef std::set<VertexPtr> VertexSet;
+struct VertexEquality {
+	bool operator() (const VertexPtr&, const VertexPtr&) const;
+};
+typedef std::unordered_set<VertexPtr, VertexHash, VertexEquality> VertexSet;
 
 struct Face {
 	unsigned int numVertices = 0;
@@ -62,7 +65,7 @@ struct Face {
 
 	Vertex facePos() const;
 };
-typedef std::set<FacePtr> FaceSet;
+typedef std::unordered_set<FacePtr> FaceSet;
 
 struct Edge {
 	PositionPtr v0;
@@ -70,6 +73,8 @@ struct Edge {
 
 	FacePtr faces[2];
 	int faceCount;
+
+	Edge(PositionPtr, PositionPtr);
 
 	bool operator==(const Edge) const;
 	bool operator!=(const Edge) const;
@@ -79,11 +84,13 @@ struct Edge {
 	Vertex midPos() const;
 };
 
-struct EdgeCompare {
-	bool operator() (const EdgePtr&, const EdgePtr&);
+struct EdgeHash {
+	size_t operator() (const EdgePtr) const;
 };
-
-typedef std::set<EdgePtr, EdgeCompare> EdgeSet;
+struct EdgeEquality {
+	bool operator() (const EdgePtr&, const EdgePtr&) const;
+};
+typedef std::unordered_set<EdgePtr, EdgeHash, EdgeEquality> EdgeSet;
 
 struct Position {
 	Vertex v;
@@ -104,11 +111,13 @@ struct Position {
 	Vertex vertexNormal() const;
 };
 
-struct PositionCompare {
-	bool operator() (const PositionPtr&, const PositionPtr&);
+struct PositionHash {
+	size_t operator() (const PositionPtr) const;
 };
-
-typedef std::set<PositionPtr, PositionCompare> PositionSet;
+struct PositionEquality {
+	bool operator() (const PositionPtr&, const PositionPtr&) const;
+};
+typedef std::unordered_set<PositionPtr, PositionHash, PositionEquality> PositionSet;
 
 /* Model
  *

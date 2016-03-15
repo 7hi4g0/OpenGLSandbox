@@ -90,8 +90,14 @@ Vertex Vertex::normal(const Vertex& point, const Vertex& next, const Vertex& pre
 	return edge1.cross(edge2).normalize();
 }
 
-bool VertexCompare::operator() (const VertexPtr& u, const VertexPtr& v) {
-	return *u < *v;
+size_t VertexHash::operator() (const VertexPtr v) const {
+	std::hash<float> float_hash;
+
+	return ((51 + float_hash(v->x)) * 51 + float_hash(v->y)) * 51 + float_hash(v->z);
+}
+
+bool VertexEquality::operator() (const VertexPtr& u, const VertexPtr& v) const {
+	return *u == *v;
 }
 
 bool Face::operator<(const Face f) const {
@@ -109,6 +115,19 @@ Vertex Face::facePos() const {
 	facePos = facePos / numVertices;
 
 	return facePos;
+}
+
+Edge::Edge(PositionPtr p, PositionPtr q) {
+	if (*p < *q) {
+		v0 = p;
+		v1 = q;
+	} else {
+		v0 = q;
+		v1 = p;
+	}
+
+	faces[0] = faces[1] = NULL;
+	faceCount = 0;
 }
 
 bool Edge::operator==(const Edge e) const {
@@ -158,8 +177,14 @@ Vertex Edge::midPos() const {
 	return midPos;
 }
 
-bool EdgeCompare::operator() (const EdgePtr& e, const EdgePtr& f) {
-	return *e < *f;
+size_t EdgeHash::operator() (const EdgePtr e) const {
+	VertexHash vert_hash;
+
+	return (51 + vert_hash(&e->v0->v)) * 51 + vert_hash(&e->v1->v);
+}
+
+bool EdgeEquality::operator() (const EdgePtr& e, const EdgePtr& f) const {
+	return *e == *f;
 }
 
 Position& Position::operator=(const Position& right) {
@@ -216,8 +241,6 @@ Position Position::operator*(const float n) const {
 
 Vertex Position::vertexPos() const {
 	Vertex vertexPos;
-	EdgeSet::iterator edgeIt;
-	FaceSet::iterator faceIt;
 	int degree;
 
 	degree = faces.size();
@@ -227,7 +250,7 @@ Vertex Position::vertexPos() const {
 	if (edges.size() > degree) {
 		degree = 1;
 
-		for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+		for (auto edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
 			if ((*edgeIt)->faceCount == 1) {
 				vertexPos = vertexPos + (*edgeIt)->midPos();
 				degree++;
@@ -238,11 +261,11 @@ Vertex Position::vertexPos() const {
 	} else {
 		vertexPos = vertexPos * (degree - 2);
 
-		for (faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
+		for (auto faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
 			vertexPos = vertexPos + ((*faceIt)->facePos() / degree);
 		}
 
-		for (edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+		for (auto edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
 			vertexPos = vertexPos + (((*edgeIt)->v0->v + (*edgeIt)->v1->v - this->v) / degree);
 		}
 
@@ -264,16 +287,21 @@ Vertex Position::vertexNormal() const {
 	return normal;
 }
 
-bool PositionCompare::operator() (const PositionPtr& p, const PositionPtr& q) {
-	return *p < *q;
+size_t PositionHash::operator() (const PositionPtr p) const {
+	VertexHash vert_hash;
+
+	return vert_hash(&p->v);
+}
+
+bool PositionEquality::operator() (const PositionPtr& p, const PositionPtr& q) const {
+	return *p == *q;
 }
 
 ModelBuffer *Model::genBuffer(bool smooth) {
 	ModelBuffer *buffer = new ModelBuffer;
-	FaceSet::iterator faceIt;
 	unsigned int index = 0;
 
-	for (faceIt = this->faces.begin(); faceIt != this->faces.end(); faceIt++) {
+	for (auto faceIt = this->faces.begin(); faceIt != this->faces.end(); faceIt++) {
 		FacePtr face = *faceIt;
 		std::vector<unsigned int> *indices;
 
@@ -355,10 +383,9 @@ Model *loadObjModel(const char * const filename) {
 			}
 
 			for (int i = 0; i < face->numVertices; i++) {
-				EdgePtr edge(new Edge{0});
+				EdgePtr edge;
 
-				edge->v0 = face->pos[i];
-				edge->v1 = face->pos[(i + 1) % face->numVertices];
+				edge = new Edge(face->pos[i], face->pos[(i + 1) % face->numVertices]);
 
 				edge = *model->edges.insert(edge).first;
 

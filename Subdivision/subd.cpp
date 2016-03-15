@@ -2,10 +2,9 @@
 
 void Subdivide(Model *model) {
 	Model newModel;
-	std::set<FacePtr>::iterator faceIt;
 	int posIndex = 0;
 
-	for (faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
+	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
 		FacePtr face = *faceIt;
 		PositionPtr facePos(new Position);
 
@@ -46,10 +45,9 @@ void Subdivide(Model *model) {
 			normal = *newModel.normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
-				EdgePtr edge(new Edge{0});
+				EdgePtr edge;
 
-				edge->v0 = subface->pos[i];
-				edge->v1 = subface->pos[(i + 1) % 4];
+				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
 				edge = *newModel.edges.insert(edge).first;
 
@@ -71,9 +69,8 @@ void Subdivide(Model *model) {
 
 void CatmullClark(Model *model) {
 	Model newModel;
-	std::set<FacePtr>::iterator faceIt;
 
-	for (faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
+	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
 		FacePtr face = *faceIt;
 		PositionPtr facePos(new Position);
 
@@ -111,10 +108,9 @@ void CatmullClark(Model *model) {
 			normal = *newModel.normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
-				EdgePtr edge(new Edge{0});
+				EdgePtr edge;
 
-				edge->v0 = subface->pos[i];
-				edge->v1 = subface->pos[(i + 1) % 4];
+				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
 				edge = *newModel.edges.insert(edge).first;
 
