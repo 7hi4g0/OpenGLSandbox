@@ -1,7 +1,25 @@
 #include <subd.h>
 
-void Subdivide(Model *model) {
-	Model newModel;
+SubSurf::SubSurf(const char * const filename) {
+	subLevels.push_back(loadObjModel(filename));
+	levels = 0;
+}
+
+Model* SubSurf::subdivide() {
+	Model *sub;
+
+	sub = CatmullClark(subLevels.back());
+	subLevels.push_back(sub);
+	levels++;
+	return sub;
+}
+
+Model* SubSurf::getLevel(int level) {
+	return subLevels[level];
+}
+
+Model* Subdivide(Model *model) {
+	Model *newModel = new Model;
 	int posIndex = 0;
 
 	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
@@ -28,28 +46,28 @@ void Subdivide(Model *model) {
 			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
 
 			//Vertice 1
-			subface->pos[0] = *newModel.pos.insert(face->pos[vertice]).first;
+			subface->pos[0] = *newModel->pos.insert(face->pos[vertice]).first;
 
 			//Vertice 2
 			*fromPos = (*from->v0 + *from->v1) / 2;
-			subface->pos[1] = *newModel.pos.insert(fromPos).first;
+			subface->pos[1] = *newModel->pos.insert(fromPos).first;
 
 			//Vertice 3
-			subface->pos[2] = *newModel.pos.insert(facePos).first;
+			subface->pos[2] = *newModel->pos.insert(facePos).first;
 
 			//Vertice 4
 			*toPos = (*to->v0 + *to->v1) / 2;
-			subface->pos[3] = *newModel.pos.insert(toPos).first;
+			subface->pos[3] = *newModel->pos.insert(toPos).first;
 
 			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
-			normal = *newModel.normals.insert(normal).first;
+			normal = *newModel->normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge;
 
 				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
-				edge = *newModel.edges.insert(edge).first;
+				edge = *newModel->edges.insert(edge).first;
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);
@@ -60,15 +78,15 @@ void Subdivide(Model *model) {
 				edge->faceCount++;
 			}
 
-			newModel.faces.insert(subface);
+			newModel->faces.insert(subface);
 		}
 	}
 
-	*model = newModel;
+	return newModel;
 }
 
-void CatmullClark(Model *model) {
-	Model newModel;
+Model* CatmullClark(Model *model) {
+	Model *newModel = new Model;
 
 	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
 		FacePtr face = *faceIt;
@@ -91,28 +109,28 @@ void CatmullClark(Model *model) {
 
 			//Vertice 1
 			*vertexPos = face->pos[vertice]->vertexPos();
-			subface->pos[0] = *newModel.pos.insert(vertexPos).first;
+			subface->pos[0] = *newModel->pos.insert(vertexPos).first;
 
 			//Vertice 2
 			*fromPos = from->edgePos();
-			subface->pos[1] = *newModel.pos.insert(fromPos).first;
+			subface->pos[1] = *newModel->pos.insert(fromPos).first;
 
 			//Vertice 3
-			subface->pos[2] = *newModel.pos.insert(facePos).first;
+			subface->pos[2] = *newModel->pos.insert(facePos).first;
 
 			//Vertice 4
 			*toPos = to->edgePos();
-			subface->pos[3] = *newModel.pos.insert(toPos).first;
+			subface->pos[3] = *newModel->pos.insert(toPos).first;
 
 			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
-			normal = *newModel.normals.insert(normal).first;
+			normal = *newModel->normals.insert(normal).first;
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge;
 
 				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
-				edge = *newModel.edges.insert(edge).first;
+				edge = *newModel->edges.insert(edge).first;
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);
@@ -123,9 +141,9 @@ void CatmullClark(Model *model) {
 				edge->faces[edge->faceCount++] = subface;
 			}
 
-			newModel.faces.insert(subface);
+			newModel->faces.insert(subface);
 		}
 	}
 
-	*model = newModel;
+	return newModel;
 }

@@ -15,8 +15,7 @@ void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
-static Model *model;
-static Model *subModel;
+static SubSurf *model;
 static ModelBuffer *modelBuffer;
 static GLuint quadIndices;
 static GLuint triIndices;
@@ -38,6 +37,7 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Vertex lightPos[2];
+static int levels;
 static int stepByStep;
 static bool smoothNormals;
 
@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
 
+	levels = 0;
 	stepByStep = 0;
 	smoothNormals = false;
 
@@ -104,16 +105,14 @@ int main(int argc, char *argv[]) {
 	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
-	model = loadObjModel(filename);
-	subModel = new Model;
-	*subModel = *model;
+	model = new SubSurf(filename);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glGenBuffers(4, &vbo[0]);
 
-	setBuffer(subModel);
+	setBuffer(model->getLevel(0));
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -167,7 +166,6 @@ int main(int argc, char *argv[]) {
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
 		glDrawElements(GL_PATCHES, indices, GL_UNSIGNED_INT, 0);	GLERR();
-		//glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
 
 		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
 		validatePipeline(pipeline);
@@ -337,7 +335,6 @@ KEY_PRESS(keyPress) {
 	static float zLight = 0;
 	KeySym keysym;
 	unsigned int currentTime;
-	unsigned int elapsedTime;
 
 	switch(keysym = XLookupKeysym(xkey, 0)) {
 		case (XK_o):
@@ -384,13 +381,13 @@ KEY_PRESS(keyPress) {
 			glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 			geometry = 1;
 			smoothNormals = true;
-			setBuffer(subModel);
+			setBuffer(model->getLevel(levels));
 			break;
 		case (XK_f):
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
 			smoothNormals = false;
-			setBuffer(subModel);
+			setBuffer(model->getLevel(levels));
 			break;
 		case (XK_n):
 			if (indices == quadIndices) {
@@ -404,24 +401,24 @@ KEY_PRESS(keyPress) {
 			stepByStep = 1;
 			indices = 0;
 			break;
-		case (XK_Return):
-			if (verbose) {
-				currentTime = getTime();
+		case (XK_KP_Subtract):
+			if (levels > 0) {
+				levels--;
+				setBuffer(model->getLevel(levels));
 			}
-			CatmullClark(subModel);
-			if (verbose) {
-				elapsedTime = currentTime;
-				currentTime = getTime();
-				elapsedTime = currentTime - elapsedTime;
-				cout << elapsedTime << " ms - Catmull-Clark" << endl;
+			break;
+		case (XK_KP_Add):
+			if (levels == model->levels) {
+				if (verbose) {
+					currentTime = getTime();
+				}
+				model->subdivide();
+				if (verbose) {
+					cout << (getTime() - currentTime) << " ms - Catmull-Clark" << endl;
+				}
 			}
-			setBuffer(subModel);
-			if (verbose) {
-				elapsedTime = currentTime;
-				currentTime = getTime();
-				elapsedTime = currentTime - elapsedTime;
-				cout << elapsedTime << " ms - Generating Buffer" << endl;
-			}
+			levels++;
+			setBuffer(model->getLevel(levels));
 			break;
 		case (XK_Up):
 			zLight += 1;

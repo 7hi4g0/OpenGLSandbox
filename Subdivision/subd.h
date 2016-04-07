@@ -1,4 +1,14 @@
 #include <model.h>
 
-void Subdivide(Model *model);
-void CatmullClark(Model *model);
+struct SubSurf {
+	std::vector<Model*> subLevels;
+	int levels;
+
+	SubSurf(const char * const);
+
+	Model* subdivide();
+	Model* getLevel(int);
+};
+
+Model* Subdivide(Model *model);
+Model* CatmullClark(Model *model);
