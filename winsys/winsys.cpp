@@ -53,7 +53,14 @@ GLint att[] = {
 	None
 };
 
-void CreateWindow(){
+void CreateWindow(GraphicsContext *GContext){
+	if (GContext == NULL) {
+		GContext = new GraphicsContext;
+
+		GContext->major = 4;
+		GContext->minor = 1;
+	}
+
 	dpy = XOpenDisplay(NULL);
 	
 	root = DefaultRootWindow(dpy);
@@ -94,8 +101,8 @@ void CreateWindow(){
 	
 
 	int context_attribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB,	4,
-		GLX_CONTEXT_MINOR_VERSION_ARB,	1,
+		GLX_CONTEXT_MAJOR_VERSION_ARB,	GContext->major,
+		GLX_CONTEXT_MINOR_VERSION_ARB,	GContext->minor,
 		GLX_CONTEXT_FLAGS_ARB,			GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		GLX_CONTEXT_PROFILE_MASK_ARB,	GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 		GLX_RENDER_TYPE,				GLX_RGBA_TYPE,

@@ -48,6 +48,7 @@ extern	PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
 extern	PFNGLPROGRAMUNIFORM3FVPROC 			glProgramUniform3fv;
 extern	PFNGLPROGRAMUNIFORMMATRIX4FVPROC 	glProgramUniformMatrix4fv;
 extern	PFNGLSHADERSOURCEPROC				glShaderSource;
+extern	PFNGLUSEPROGRAMPROC 				glUseProgram;
 extern	PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
 extern	PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
 extern	PFNGLVERTEXATTRIBPOINTERPROC 		glVertexAttribPointer;

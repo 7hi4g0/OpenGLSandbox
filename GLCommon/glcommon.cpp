@@ -27,6 +27,7 @@ PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
 PFNGLPROGRAMUNIFORM3FVPROC 			glProgramUniform3fv;
 PFNGLPROGRAMUNIFORMMATRIX4FVPROC 	glProgramUniformMatrix4fv;
 PFNGLSHADERSOURCEPROC				glShaderSource;
+PFNGLUSEPROGRAMPROC 				glUseProgram;
 PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
 PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
 PFNGLVERTEXATTRIBPOINTERPROC 		glVertexAttribPointer;
@@ -70,6 +71,7 @@ void initGLFunctions() {
 	getFunction(PFNGLPROGRAMUNIFORM3FVPROC, 		glProgramUniform3fv);
 	getFunction(PFNGLPROGRAMUNIFORMMATRIX4FVPROC, 	glProgramUniformMatrix4fv);
 	getFunction(PFNGLSHADERSOURCEPROC,				glShaderSource);
+	getFunction(PFNGLUSEPROGRAMPROC,	 			glUseProgram);
 	getFunction(PFNGLUSEPROGRAMSTAGESPROC, 			glUseProgramStages);
 	getFunction(PFNGLVALIDATEPROGRAMPIPELINEPROC,	glValidateProgramPipeline);
 	getFunction(PFNGLVERTEXATTRIBPOINTERPROC, 		glVertexAttribPointer);

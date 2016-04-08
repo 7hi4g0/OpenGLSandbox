@@ -9,6 +9,12 @@
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
+struct GraphicsContext {
+	int major;
+	int minor;
+};
+
+
 extern int					debug;
 extern int					verbose;
 extern Display				*dpy;
@@ -24,7 +30,7 @@ extern GLXFBConfig			fbc;
 extern Atom					delete_event;
 extern Bool					loop;
 
-void CreateWindow();
+void CreateWindow(GraphicsContext* = NULL);
 void DestroyWindow();
 void EndDraw();
 void TreatEvents();
