@@ -248,16 +248,24 @@ Vertex Position::vertexPos() const {
 	vertexPos = this->v;
 
 	if (edges.size() > degree) {
-		degree = 1;
+		Vertex creaseEdgesPos;
+		int creaseEdges;
+		
+		creaseEdges = 0;
+		creaseEdgesPos = {0};
 
 		for (auto edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
 			if ((*edgeIt)->faceCount == 1) {
-				vertexPos = vertexPos + (*edgeIt)->midPos();
+				if (creaseEdges++ > 2) {
+					break;
+				}
+
+				creaseEdgesPos = creaseEdgesPos + (*edgeIt)->midPos();
 				degree++;
 			}
 		}
 
-		vertexPos = vertexPos / degree;
+		vertexPos = (vertexPos + vertexPos + creaseEdgesPos) / 4;
 	} else {
 		vertexPos = vertexPos * (degree - 2);
 
