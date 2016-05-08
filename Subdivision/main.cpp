@@ -15,6 +15,7 @@ void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
+static GraphicsContext *ctx;
 static SubSurf *model;
 static ModelBuffer *modelBuffer;
 static GLuint quadIndices;
@@ -90,14 +91,16 @@ int main(int argc, char *argv[]) {
 
 	initGLFunctions();
 
-	CreateWindow();
+	ctx = createGraphicsContext();
+
+	CreateWindow(ctx);
 
 	glGetIntegerv(GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
 	if (verbose) {
 		cout << "Max Tess Level: " << maxTessLevel << endl;
 	}
 
-	XClearWindow(dpy, win);
+	XClearWindow(ctx->dpy, ctx->win);
 
 	setPipeline();	GLERR();
 
@@ -136,7 +139,7 @@ int main(int argc, char *argv[]) {
 
 	loop = true;
 	while(loop) {
-		TreatEvents();
+		TreatEvents(ctx);
 
 		if (stepByStep) {
 			indices += 4;
@@ -181,12 +184,12 @@ int main(int argc, char *argv[]) {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
 		glDrawElements(GL_PATCHES, triIndices, GL_UNSIGNED_INT, 0);	GLERR();
 
-		EndDraw();	GLERR();
+		EndDraw(ctx);	GLERR();
 
 		msleep(33);
 	}
 
-	DestroyWindow();
+	DestroyWindow(ctx);
 	return 0;
 }
 

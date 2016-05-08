@@ -30,6 +30,7 @@ typedef struct {
 	GLfloat b;
 } Color;
 
+static GraphicsContext *ctx;
 static GLuint pipeline;
 static GLuint vertProgram;
 static GLuint fragProgram;
@@ -69,14 +70,16 @@ int main(int argc, char *argv[]) {
 
 	initGLFunctions();
 
-	CreateWindow();
+	ctx = createGraphicsContext();
+
+	CreateWindow(ctx);
 
 	glGetIntegerv(GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
 	if (verbose) {
 		cout << "Max Tess Level: " << maxTessLevel << endl;
 	}
 
-	XClearWindow(dpy, win);
+	XClearWindow(ctx->dpy, ctx->win);
 
 	setPipeline();	GLERR();
 
@@ -130,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 	loop = true;
 	while(loop) {
-		TreatEvents();
+		TreatEvents(ctx);
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -160,12 +163,12 @@ int main(int argc, char *argv[]) {
 
 		glDrawArrays(GL_PATCHES, 4, 3);	GLERR();
 
-		EndDraw();	GLERR();
+		EndDraw(ctx);	GLERR();
 
 		msleep(33);
 	}
 
-	DestroyWindow();
+	DestroyWindow(ctx);
 	return 0;
 }
 

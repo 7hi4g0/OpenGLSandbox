@@ -1,7 +1,0 @@
-{
-	"glxContextMajorVersion":	4,
-	"glxContextMinorVersion":	1,
-	"glxContextFlags":			"glxContextForwardCompatibleBit",
-	"glxContextProfileMask":	"glxContextCoreProfileBit",
-	"glxRenderType":			"glxRgbaType"
-}
