@@ -128,6 +128,22 @@ void CreateWindow(){
 	}
 	
 	glXMakeCurrent(dpy, win, glc);
+
+	if (debug >= 2) {
+		GLint ext, n;
+		const GLubyte *extension = NULL;
+
+		extension = glGetString(GL_RENDERER);
+		cout << extension << endl;
+
+		glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+		cout << "Found " << n << " extensions" << endl;
+
+		for (ext = 0; ext < n; ext++) {
+			extension = glGetStringi(GL_EXTENSIONS, ext);
+			cout << extension << endl;
+		}
+	}
 }
 
 void DestroyWindow() {

@@ -19,6 +19,7 @@ PFNGLGETPROGRAMPIPELINEINFOLOGPROC	glGetProgramPipelineInfoLog;
 PFNGLGETPROGRAMPIPELINEIVPROC 		glGetProgramPipelineiv;
 PFNGLGETSHADERINFOLOGPROC			glGetShaderInfoLog;
 PFNGLGETSHADERIVPROC				glGetShaderiv;
+PFNGLGETSTRINGIPROC					glGetStringi;
 PFNGLGETUNIFORMLOCATIONPROC 		glGetUniformLocation;
 PFNGLLINKPROGRAMPROC				glLinkProgram;
 PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;
@@ -62,6 +63,7 @@ void initGLFunctions() {
 	getFunction(PFNGLGETPROGRAMPIPELINEIVPROC, 		glGetProgramPipelineiv);
 	getFunction(PFNGLGETSHADERINFOLOGPROC,			glGetShaderInfoLog);
 	getFunction(PFNGLGETSHADERIVPROC,				glGetShaderiv);
+	getFunction(PFNGLGETSTRINGIPROC,				glGetStringi);
 	getFunction(PFNGLGETUNIFORMLOCATIONPROC, 		glGetUniformLocation);
 	getFunction(PFNGLLINKPROGRAMPROC,				glLinkProgram);
 	getFunction(PFNGLPATCHPARAMETERIPROC, 			glPatchParameteri);

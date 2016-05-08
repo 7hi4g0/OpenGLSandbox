@@ -40,6 +40,7 @@ extern	PFNGLGETPROGRAMPIPELINEINFOLOGPROC	glGetProgramPipelineInfoLog;
 extern	PFNGLGETPROGRAMPIPELINEIVPROC 		glGetProgramPipelineiv;
 extern	PFNGLGETSHADERINFOLOGPROC			glGetShaderInfoLog;
 extern	PFNGLGETSHADERIVPROC				glGetShaderiv;
+extern	PFNGLGETSTRINGIPROC					glGetStringi;
 extern	PFNGLGETUNIFORMLOCATIONPROC 		glGetUniformLocation;
 extern	PFNGLLINKPROGRAMPROC				glLinkProgram;
 extern	PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;

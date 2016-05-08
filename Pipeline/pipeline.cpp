@@ -20,7 +20,9 @@ void setShader(GLuint shader, const char * sourceFile) {
 	length = source.length();
 	cSource = source.c_str();
 
-	if (debug > 2) {
+	if (debug >= 1) {
+		cerr << "Compiling " << sourceFile << endl;
+	} else if (debug > 2) {
 		cerr << source << endl;
 	}
 
