@@ -22,7 +22,8 @@ void setShader(GLuint shader, const char * sourceFile) {
 
 	if (debug >= 1) {
 		cerr << "Compiling " << sourceFile << endl;
-	} else if (debug > 2) {
+	}
+	if (debug >= 3) {
 		cerr << source << endl;
 	}
 

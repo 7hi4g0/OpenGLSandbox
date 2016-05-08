@@ -22,12 +22,7 @@ ButtonPressFn *TreatButtonPress = TreatButtonPressStub;
 
 int debug;
 int verbose;
-Display					*dpy;
-Window					root;
-XVisualInfo				*vi;
-Colormap				cmap;
 XSetWindowAttributes	swa;
-Window					win;
 GLXContext				glc;
 XWindowAttributes		gwa;
 XEvent					xev;
@@ -48,18 +43,28 @@ GLint att[] = {
 	GLX_DEPTH_SIZE,		24,
 	GLX_STENCIL_SIZE,	8,
 	GLX_DOUBLEBUFFER,	True,
-	GLX_SAMPLE_BUFFERS,	1,
-	GLX_SAMPLES,		8,
+//	GLX_SAMPLE_BUFFERS,	1,
+//	GLX_SAMPLES,		8,
 	None
 };
 
-void CreateWindow(){
-	dpy = XOpenDisplay(NULL);
+GraphicsContext *createGraphicsContext() {
+	return new GraphicsContext{0};
+}
+
+void CreateWindow(GraphicsContext *ctx){
+	if (ctx->major == 0 && ctx->minor == 0) {
+		ctx->major = 4;
+		ctx->minor = 1;
+	}
+
+	ctx->dpy = XOpenDisplay(NULL);
 	
-	root = DefaultRootWindow(dpy);
+	ctx->root = DefaultRootWindow(ctx->dpy);
+	ctx->screen = DefaultScreen(ctx->dpy);
 	
 	int count;
-	GLXFBConfig *p_fbc = glXChooseFBConfig(dpy, DefaultScreen(dpy), att, &count);
+	GLXFBConfig *p_fbc = glXChooseFBConfig(ctx->dpy, ctx->screen, att, &count);
 	
 	if (count < 1){
 		cout << "No FBConfig found" << endl;
@@ -69,33 +74,33 @@ void CreateWindow(){
 			std::cout << p_fbc[i].
 		}*/
 		
-		XCloseDisplay(dpy);
+		XCloseDisplay(ctx->dpy);
 		exit(1);
 	}
 	
 	fbc = p_fbc[0];
 	XFree(p_fbc); // Can I free it here?
 	
-	vi = glXGetVisualFromFBConfig(dpy, fbc);
+	ctx->vi = glXGetVisualFromFBConfig(ctx->dpy, fbc);
 	
-	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
+	ctx->cmap = XCreateColormap(ctx->dpy, ctx->root, ctx->vi->visual, AllocNone);
 	
 	swa.background_pixel = 0xBCBCBC;
-	swa.colormap = cmap;
+	swa.colormap = ctx->cmap;
 	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonMotionMask | ButtonPressMask | StructureNotifyMask;
 	
-	win = XCreateWindow(dpy, root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWBackPixel | CWColormap | CWEventMask, &swa);
+	ctx->win = XCreateWindow(ctx->dpy, ctx->root, 0, 0, 600, 600, 0, ctx->vi->depth, InputOutput, ctx->vi->visual, CWBackPixel | CWColormap | CWEventMask, &swa);
 	
-	delete_event = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-	XSetWMProtocols(dpy, win, &delete_event, 1);
+	delete_event = XInternAtom(ctx->dpy, "WM_DELETE_WINDOW", False);
+	XSetWMProtocols(ctx->dpy, ctx->win, &delete_event, 1);
 	
-	XMapWindow(dpy, win);
-	XStoreName(dpy, win, "Simple X Window");
+	XMapWindow(ctx->dpy, ctx->win);
+	XStoreName(ctx->dpy, ctx->win, "Simple X Window");
 	
 
 	int context_attribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB,	4,
-		GLX_CONTEXT_MINOR_VERSION_ARB,	1,
+		GLX_CONTEXT_MAJOR_VERSION_ARB,	ctx->major,
+		GLX_CONTEXT_MINOR_VERSION_ARB,	ctx->minor,
 		GLX_CONTEXT_FLAGS_ARB,			GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		GLX_CONTEXT_PROFILE_MASK_ARB,	GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 		GLX_RENDER_TYPE,				GLX_RGBA_TYPE,
@@ -107,27 +112,27 @@ void CreateWindow(){
 	if (!glXCreateContextAttribsARB){
 		cout << "Error getting gl functions address" << endl;
 		
-		XCloseDisplay(dpy);
+		XCloseDisplay(ctx->dpy);
 		exit(1);
 	}
 	
-	glc = glXCreateContextAttribsARB(dpy, fbc, 0, True, context_attribs);
-	//glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+	glc = glXCreateContextAttribsARB(ctx->dpy, fbc, 0, True, context_attribs);
+	//glc = glXCreateContext(ctx->dpy, vi, NULL, GL_TRUE);
 	
 	if (glc == NULL){
 		cout << "Failed to create a context" << endl;
 		
-		XCloseDisplay(dpy);
+		XCloseDisplay(ctx->dpy);
 		exit(1);
 	}
 	
-	if (glXIsDirect(dpy, glc)){
+	if (glXIsDirect(ctx->dpy, glc)){
 		cout << "Direct GLX rendering context obtained" << endl;
 	}else{
 		cout << "Indirect GLX rendering context obtained" << endl;
 	}
 	
-	glXMakeCurrent(dpy, win, glc);
+	glXMakeCurrent(ctx->dpy, ctx->win, glc);
 
 	if (debug >= 2) {
 		GLint ext, n;
@@ -146,21 +151,21 @@ void CreateWindow(){
 	}
 }
 
-void DestroyWindow() {
-	glXMakeCurrent(dpy, None, NULL);
-	glXDestroyContext(dpy, glc);
+void DestroyWindow(GraphicsContext *ctx) {
+	glXMakeCurrent(ctx->dpy, None, NULL);
+	glXDestroyContext(ctx->dpy, glc);
 	
-	XDestroyWindow(dpy, win);	
-	XCloseDisplay(dpy);
+	XDestroyWindow(ctx->dpy, ctx->win);
+	XCloseDisplay(ctx->dpy);
 }
 
-void EndDraw() {
-	glXSwapBuffers(dpy, win);
+void EndDraw(GraphicsContext *ctx) {
+	glXSwapBuffers(ctx->dpy, ctx->win);
 }
 
-void TreatEvents() {
-	while (XPending(dpy) > 0){
-		XNextEvent(dpy, &xev);
+void TreatEvents(GraphicsContext *ctx) {
+	while (XPending(ctx->dpy) > 0){
+		XNextEvent(ctx->dpy, &xev);
 		
 		switch (xev.type){
 			case KeyPress:
@@ -246,32 +251,32 @@ unsigned int getTime() {
 	return tv.tv_sec * 1000 + tv.tv_usec /1000;
 }
 
-void NonFullscreen() {
+void NonFullscreen(GraphicsContext *ctx) {
 	//Create a XEvent to tell the Window Manager to show the window as non-fullscreen
 	memset(&xev, 0, sizeof(xev));
 	xev.type = ClientMessage;
-	xev.xclient.window = win;
-	xev.xclient.message_type = XInternAtom(dpy, "_NET_WM_STATE", False);
+	xev.xclient.window = ctx->win;
+	xev.xclient.message_type = XInternAtom(ctx->dpy, "_NET_WM_STATE", False);
 	xev.xclient.format = 32;
 	xev.xclient.data.l[0] = 0;
-	xev.xclient.data.l[1] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	xev.xclient.data.l[1] = XInternAtom(ctx->dpy, "_NET_WM_STATE_FULLSCREEN", False);
 	xev.xclient.data.l[2] = xev.xclient.data.l[3] = xev.xclient.data.l[4] = 0;
 	
 	//Send the XEvent just created
-	XSendEvent (dpy, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+	XSendEvent (ctx->dpy, ctx->root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 
-void Fullscreen() {
+void Fullscreen(GraphicsContext *ctx) {
 	//Create a XEvent to tell the Window Manager to show the window as fullscreen
 	memset(&xev, 0, sizeof(xev));
 	xev.type = ClientMessage;
-	xev.xclient.window = win;
-	xev.xclient.message_type = XInternAtom(dpy, "_NET_WM_STATE", False);
+	xev.xclient.window = ctx->win;
+	xev.xclient.message_type = XInternAtom(ctx->dpy, "_NET_WM_STATE", False);
 	xev.xclient.format = 32;
 	xev.xclient.data.l[0] = 1;
-	xev.xclient.data.l[1] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	xev.xclient.data.l[1] = XInternAtom(ctx->dpy, "_NET_WM_STATE_FULLSCREEN", False);
 	xev.xclient.data.l[2] = xev.xclient.data.l[3] = xev.xclient.data.l[4] = 0;
 	
 	//Send the XEvent that was just created
-	XSendEvent (dpy, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+	XSendEvent (ctx->dpy, ctx->root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }

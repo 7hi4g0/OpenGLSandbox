@@ -9,14 +9,21 @@
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
+struct GraphicsContext {
+	Display			*dpy;
+	XVisualInfo		*vi;
+	Colormap		cmap;
+	Window			root;
+	Window			win;
+	int				screen;
+
+	int				major;
+	int				minor;
+};
+
 extern int					debug;
 extern int					verbose;
-extern Display				*dpy;
-extern Window				root;
-extern XVisualInfo			*vi;
-extern Colormap				cmap;
 extern XSetWindowAttributes	swa;
-extern Window				win;
 extern GLXContext			glc;
 extern XWindowAttributes	gwa;
 extern XEvent				xev;
@@ -24,14 +31,15 @@ extern GLXFBConfig			fbc;
 extern Atom					delete_event;
 extern Bool					loop;
 
-void CreateWindow();
-void DestroyWindow();
-void EndDraw();
-void TreatEvents();
+GraphicsContext *createGraphicsContext();
+void CreateWindow(GraphicsContext *ctx);
+void DestroyWindow(GraphicsContext *ctx);
+void EndDraw(GraphicsContext *ctx);
+void TreatEvents(GraphicsContext *ctx);
 void msleep(unsigned int msec);
 unsigned int getTime();
-void Fullscreen();
-void NonFullscreen();
+void Fullscreen(GraphicsContext *ctx);
+void NonFullscreen(GraphicsContext *ctx);
 
 #define KEY_PRESS(name)		void name(XKeyEvent *xkey)
 typedef KEY_PRESS(KeyPressFn);
