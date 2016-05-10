@@ -336,6 +336,19 @@ ModelBuffer *Model::genBuffer(bool smooth) {
 	return buffer;
 }
 
+void readFacePoint(const char* point, int *posIndex, int *texIndex, int *normIndex) {
+	if (sscanf(point, "%d//%d", posIndex, normIndex) == 2) {
+		return;
+	}
+
+	if (sscanf(point, "%d/%d/%d", posIndex, texIndex, normIndex) == 3) {
+		return;
+	}
+
+	cerr << "Unsupported face point description!" << endl << point << endl;
+	exit(1);
+}
+
 Model *loadObjModel(const char * const filename) {
 	Model *model = new Model;
 	std::vector<Vertex> vertex;
@@ -370,11 +383,13 @@ Model *loadObjModel(const char * const filename) {
 
 			while (indices >> index) {
 				int posIndex;
+				int texIndex;
 				int normIndex;
 				PositionPtr pos(new Position);
 				VertexPtr normal(new Vertex{0});
 
-				sscanf(index.c_str(), "%d//%d", &posIndex, &normIndex);
+				// Always requires position and normal. Ignoring texture.
+				readFacePoint(index.c_str(), &posIndex, &texIndex, &normIndex);
 
 				pos->v = vertex[posIndex - 1];
 				face->pos[face->numVertices] = *model->pos.insert(pos).first;
