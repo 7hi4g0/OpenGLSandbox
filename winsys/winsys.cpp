@@ -126,10 +126,12 @@ void CreateWindow(GraphicsContext *ctx){
 		exit(1);
 	}
 	
-	if (glXIsDirect(ctx->dpy, glc)){
-		cout << "Direct GLX rendering context obtained" << endl;
-	}else{
-		cout << "Indirect GLX rendering context obtained" << endl;
+	if (verbose) {
+		if (glXIsDirect(ctx->dpy, glc)){
+			cout << "Direct GLX rendering context obtained" << endl;
+		}else{
+			cout << "Indirect GLX rendering context obtained" << endl;
+		}
 	}
 	
 	glXMakeCurrent(ctx->dpy, ctx->win, glc);

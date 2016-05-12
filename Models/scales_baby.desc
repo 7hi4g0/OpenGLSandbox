@@ -1,0 +1,7 @@
+BeginObject
+filename = "Models/objFiles/scales_baby/scales_baby_000000.obj"
+isolateExtraordinary = "6"
+subdivisionsInAdvance = "0"
+keyframeBaseFilename = "Models/objFiles/scales_baby/scales_baby_*.obj"
+color = "0.54 0.098 0.098 1.0"
+EndObject
