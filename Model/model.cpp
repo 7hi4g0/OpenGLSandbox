@@ -360,6 +360,7 @@ Model *loadObjModel(const char * const filename) {
 	std::string type;
 
 	while (file >> type) {
+		// This seems wrong! Test it!
 		if (type.compare("#") == 0) {
 			file.ignore(65535, '\n');
 		} else if (type.compare("v") == 0) {

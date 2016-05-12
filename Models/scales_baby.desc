@@ -1,7 +1,8 @@
 BeginObject
-filename = "Models/objFiles/scales_baby/scales_baby_000000.obj"
+filename = "objFiles/scales_baby/scales_baby_000000.obj"
 isolateExtraordinary = "6"
 subdivisionsInAdvance = "0"
-keyframeBaseFilename = "Models/objFiles/scales_baby/scales_baby_*.obj"
+keyframeBaseFilename = "objFiles/scales_baby/scales_baby_%06d.obj"
+keyframes = "144"
 color = "0.54 0.098 0.098 1.0"
 EndObject

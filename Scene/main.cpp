@@ -17,8 +17,6 @@ BUTTON_PRESS(buttonPress);
 
 static GraphicsContext *ctx;
 static Scene *scene;
-static KeyFrame *currFrame;
-static GLuint current;
 static GLuint quadIndices;
 static GLuint triIndices;
 static GLuint indices;
@@ -95,20 +93,8 @@ int main(int argc, char *argv[]) {
 	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
-	//scene = new Scene(filename);
-	scene = new Scene();
-
-	currFrame = new KeyFrame("../Models/objFiles/scales_baby/scales_baby_000000.obj");
-	currFrame->genBuffers();
-	scene->frames.push_back(currFrame);
-
-	currFrame = new KeyFrame("../Models/objFiles/scales_baby/scales_baby_000010.obj");
-	currFrame->genBuffers();
-	scene->frames.push_back(currFrame);
-
-	//currFrame = scene->currFrame();
-	currFrame = scene->frames[0];
-	current = 0;
+	scene = new Scene(filename);
+	scene->genKeyFrames();
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -132,7 +118,11 @@ int main(int argc, char *argv[]) {
 
 	loop = true;
 	while(loop) {
+		KeyFrame *currFrame;
+
 		TreatEvents(ctx);
+
+		currFrame = scene->currFrame();
 
 		glBindVertexArray(currFrame->vao);
 
@@ -176,8 +166,7 @@ int main(int argc, char *argv[]) {
 
 		EndDraw(ctx);	GLERR();
 
-		current = (current + 1) % 2;
-		currFrame = scene->frames[current];
+		scene->animate();
 
 		msleep(33);
 	}
