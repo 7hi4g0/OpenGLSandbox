@@ -13,7 +13,7 @@ struct SubSurf {
 	Model* getLevel(int);
 };
 
-Model* Subdivide(Model *model);
-Model* CatmullClark(Model *model);
+Model* Subdivide(FaceSet *);
+Model* CatmullClark(FaceSet *);
 
 #endif //_SUBD_H_

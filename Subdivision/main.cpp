@@ -38,6 +38,7 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Vertex lightPos[2];
+static Vertex color;
 static int levels;
 static int stepByStep;
 static bool smoothNormals;
@@ -122,6 +123,7 @@ int main(int argc, char *argv[]) {
 	GLint modelviewUniform;
 	GLint projectionUniform;
 	GLint lightPosUniform;
+	GLint colorUniform;
 
 	innerLevel = 2.0f;
 	outerLevel = 2.0f;
@@ -134,6 +136,8 @@ int main(int argc, char *argv[]) {
 	modelview.pushMatrix();
 	updateModelView();
 	projection.setPerspective(45, 1, 1, 1000);
+
+	color = (Vertex) {1.0f, 0.0f, 0.0f};
 
 	glBindProgramPipeline(pipeline);	GLERR();
 
@@ -160,12 +164,14 @@ int main(int argc, char *argv[]) {
 		modelviewUniform = glGetUniformLocation(vertProgram, "uModelView");	GLERR();
 		projectionUniform = glGetUniformLocation(vertProgram, "uProjection");	GLERR();
 		lightPosUniform = glGetUniformLocation(vertProgram, "uLightPos");	GLERR();
+		colorUniform = glGetUniformLocation(vertProgram, "uColor");	GLERR();
 
 		glProgramUniform1fv(quadProgram, innerLevelUniform, 1, &innerLevel);	GLERR();
 		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
 		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+		glProgramUniform3fv(vertProgram, colorUniform, 1, (float *) &color);	GLERR();
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
 		glDrawElements(GL_PATCHES, indices, GL_UNSIGNED_INT, 0);	GLERR();

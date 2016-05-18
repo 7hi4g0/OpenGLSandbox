@@ -8,7 +8,7 @@ SubSurf::SubSurf(const char * const filename) {
 Model* SubSurf::subdivide() {
 	Model *sub;
 
-	sub = CatmullClark(subLevels.back());
+	sub = CatmullClark(&subLevels.back()->faces);
 	subLevels.push_back(sub);
 	levels++;
 	return sub;
@@ -18,11 +18,11 @@ Model* SubSurf::getLevel(int level) {
 	return subLevels[level];
 }
 
-Model* Subdivide(Model *model) {
+Model* Subdivide(FaceSet *faces) {
 	Model *newModel = new Model;
 	int posIndex = 0;
 
-	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
+	for (auto faceIt = faces->begin(); faceIt != faces->end(); faceIt++) {
 		FacePtr face = *faceIt;
 		PositionPtr facePos(new Position);
 
@@ -85,10 +85,10 @@ Model* Subdivide(Model *model) {
 	return newModel;
 }
 
-Model* CatmullClark(Model *model) {
+Model* CatmullClark(FaceSet *faces) {
 	Model *newModel = new Model;
 
-	for (auto faceIt = model->faces.begin(); faceIt != model->faces.end(); faceIt++) {
+	for (auto faceIt = faces->begin(); faceIt != faces->end(); faceIt++) {
 		FacePtr face = *faceIt;
 		PositionPtr facePos(new Position);
 

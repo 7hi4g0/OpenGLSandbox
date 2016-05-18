@@ -3,6 +3,7 @@
 #include <matrix4.h>
 #include <model.h>
 #include <pipeline.h>
+#include <gpusubd.h>
 
 using std::cout;
 using std::cerr;
@@ -13,7 +14,8 @@ void updateModelView();
 KEY_PRESS(keyPress);
 BUTTON_PRESS(buttonPress);
 
-static GraphicsContext * ctx;
+static GraphicsContext *ctx;
+static AdaptiveSubSurf *model;
 static GLuint pipeline;
 static GLuint vertProgram;
 static GLuint quadProgram;
@@ -29,7 +31,9 @@ static Matrix4 projection;
 static float angle;
 static float distance;
 static Vertex lightPos[2];
-static Vertex color;
+static Vertex levelColor[6];
+static int levels;
+//static bool smoothNormals;
 
 int main(int argc, char *argv[]) {
 	char opt;
@@ -64,6 +68,9 @@ int main(int argc, char *argv[]) {
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
 
+	levels = 0;
+	//smoothNormals = false;
+
 	initGLFunctions();
 
 	ctx = createGraphicsContext();
@@ -83,43 +90,10 @@ int main(int argc, char *argv[]) {
 	glDepthFunc(GL_LESS);
 	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
 
-	Model *model;
-	ModelBuffer *buffer;
-	GLuint vertices;
-	GLuint quadIndices;
-	GLuint triIndices;
+	model = new AdaptiveSubSurf(filename);
 
-	model = loadObjModel(filename);
-	buffer = model->genBuffer();
-
-	vertices = buffer->pos.size();
-	quadIndices = buffer->quadIndices.size();
-	triIndices = buffer->triIndices.size();
-
-	GLuint vao;
-	GLuint vbo[4];
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(4, &vbo[0]);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(buffer->pos[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(buffer->normals[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices * sizeof(unsigned int), &(buffer->quadIndices[0]), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, triIndices * sizeof(unsigned int), &(buffer->triIndices[0]), GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	model->subdivide(3);
+	model->genBuffers();
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -140,7 +114,12 @@ int main(int argc, char *argv[]) {
 	updateModelView();
 	projection.setPerspective(45, 1, 1, 1000);
 
-	color = (Vertex) {1.0f, 0.0f, 0.0f};
+	levelColor[0] = (Vertex) {1.0f, 0.0f, 0.0f};
+	levelColor[1] = (Vertex) {1.0f, 1.0f, 0.0f};
+	levelColor[2] = (Vertex) {0.0f, 1.0f, 0.0f};
+	levelColor[3] = (Vertex) {0.0f, 1.0f, 1.0f};
+	levelColor[4] = (Vertex) {0.0f, 0.0f, 1.0f};
+	levelColor[5] = (Vertex) {1.0f, 0.0f, 1.0f};
 
 	glBindProgramPipeline(pipeline);	GLERR();
 
@@ -149,11 +128,6 @@ int main(int argc, char *argv[]) {
 		TreatEvents(ctx);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
-		validatePipeline(pipeline);
-
-		glPatchParameteri(GL_PATCH_VERTICES, 4);
 
 		innerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
 		outerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
@@ -167,25 +141,38 @@ int main(int argc, char *argv[]) {
 		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
 		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
-		glProgramUniform3fv(vertProgram, colorUniform, 1, (float *) &color);	GLERR();
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-		glDrawElements(GL_PATCHES, quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
-		//glDrawArrays(GL_PATCHES, 0, vertices);	GLERR();
+		for (int level = 0; level < model->levels; level++) {
+			AdaptiveLevel *subLevel = model->subLevels[level];
 
-		glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
-		validatePipeline(pipeline);
+			glProgramUniform3fv(vertProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
 
-		glPatchParameteri(GL_PATCH_VERTICES, 3);
+			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
+			validatePipeline(pipeline);
 
-		innerLevelUniform = glGetUniformLocation(triProgram, "tessLevelInner");
-		outerLevelUniform = glGetUniformLocation(triProgram, "tessLevelOuter");
+			glPatchParameteri(GL_PATCH_VERTICES, 4);
 
-		glProgramUniform1fv(triProgram, innerLevelUniform, 1, &innerLevel);
-		glProgramUniform1fv(triProgram, outerLevelUniform, 1, &outerLevel);
+			glBindVertexArray(subLevel->vao);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
-		glDrawElements(GL_PATCHES, triIndices, GL_UNSIGNED_INT, 0);	GLERR();
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->quadIndexBuffer);
+			glDrawElements(GL_PATCHES, subLevel->quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
+
+			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
+			validatePipeline(pipeline);
+
+			glPatchParameteri(GL_PATCH_VERTICES, 3);
+
+			innerLevelUniform = glGetUniformLocation(triProgram, "tessLevelInner");
+			outerLevelUniform = glGetUniformLocation(triProgram, "tessLevelOuter");
+
+			glProgramUniform1fv(triProgram, innerLevelUniform, 1, &innerLevel);
+			glProgramUniform1fv(triProgram, outerLevelUniform, 1, &outerLevel);
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->triIndexBuffer);
+			glDrawElements(GL_PATCHES, subLevel->triIndices, GL_UNSIGNED_INT, 0);	GLERR();
+
+			glBindVertexArray(0);
+		}
 
 		EndDraw(ctx);	GLERR();
 
@@ -298,8 +285,10 @@ void updateModelView() {
 KEY_PRESS(keyPress) {
 	static unsigned int geometry = 0;
 	static float zLight = 0;
+	KeySym keysym;
+	unsigned int currentTime;
 
-	switch(XLookupKeysym(xkey, 0)) {
+	switch(keysym = XLookupKeysym(xkey, 0)) {
 		case (XK_o):
 			if (outerLevel < maxTessLevel) {
 				outerLevel += 1;
@@ -343,10 +332,41 @@ KEY_PRESS(keyPress) {
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
 			glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 			geometry = 1;
+			/*
+			smoothNormals = true;
+			setBuffer(model->getLevel(levels));
+			*/
 			break;
 		case (XK_f):
 			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
+			/*
+			smoothNormals = false;
+			setBuffer(model->getLevel(levels));
+			*/
+			break;
+		case (XK_KP_Subtract):
+			if (levels > 0) {
+				levels--;
+				//setBuffer(model->getLevel(levels));
+			}
+			cout << levels << endl;
+			break;
+		case (XK_KP_Add):
+			if (levels < model->levels - 1) {
+			/*
+				if (verbose) {
+					currentTime = getTime();
+				}
+				model->subdivide();
+				if (verbose) {
+					cout << (getTime() - currentTime) << " ms - Catmull-Clark" << endl;
+				}
+			*/
+				levels++;
+			}
+			cout << levels << endl;
+			//setBuffer(model->getLevel(levels));
 			break;
 		case (XK_Up):
 			zLight += 1;
@@ -370,6 +390,9 @@ KEY_PRESS(keyPress) {
 			loop = false;
 			break;
 		default:
+			if (verbose) {
+				cerr << "Untreated " << XKeysymToString(keysym) << " captured." << endl;
+			}
 			break;
 	};
 }
