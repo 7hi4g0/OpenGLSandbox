@@ -16,6 +16,9 @@ struct AdaptiveLevel {
 	ModelBuffer *modelBuffer;
 	FaceSet subFaces;
 
+	FaceSet levelFaces;
+	FaceSet fullFaces;
+
 	GLuint vertices;
 	GLuint quadIndices;
 	GLuint triIndices;

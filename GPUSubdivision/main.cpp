@@ -42,8 +42,9 @@ int main(int argc, char *argv[]) {
 	filename = (char *) "../Models/suzanne.obj";
 
 	debug = 0;
+	levels = 3;
 
-	while ((opt = getopt(argc, argv, ":dvf:")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:l:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
@@ -53,6 +54,9 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'f':
 				filename = optarg;
+				break;
+			case 'l':
+				levels = atoi(optarg);
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -68,7 +72,6 @@ int main(int argc, char *argv[]) {
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
 
-	levels = 0;
 	//smoothNormals = false;
 
 	initGLFunctions();
@@ -92,7 +95,7 @@ int main(int argc, char *argv[]) {
 
 	model = new AdaptiveSubSurf(filename);
 
-	model->subdivide(3);
+	model->subdivide(levels);
 	model->genBuffers();
 
 	GLint innerLevelUniform;

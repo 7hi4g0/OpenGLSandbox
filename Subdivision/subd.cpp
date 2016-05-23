@@ -42,6 +42,8 @@ Model* Subdivide(FaceSet *faces) {
 			VertexPtr normal{new Vertex};
 
 			subface->numVertices = 4;
+			subface->wasTagged = face->tagged;
+
 			from = face->edges[vertice];
 			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
 
@@ -104,6 +106,8 @@ Model* CatmullClark(FaceSet *faces) {
 			VertexPtr normal{new Vertex};
 
 			subface->numVertices = 4;
+			subface->wasTagged = face->tagged;
+
 			from = face->edges[vertice];
 			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
 

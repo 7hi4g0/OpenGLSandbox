@@ -18,13 +18,20 @@ AdaptiveLevel::AdaptiveLevel() {
 }
 
 void AdaptiveLevel::addFaceRing(FacePtr face) {
+	face->tagged = true;
+	subFaces.insert(face);
+
 	for (int vertice = 0; vertice < face->numVertices; vertice++) {
 		PositionPtr pos = face->pos[vertice];
 
 		for (auto faceIt = pos->faces.begin(); faceIt != pos->faces.end(); faceIt++) {
-			FacePtr face = *faceIt;
+			FacePtr adjFace = *faceIt;
 
-			subFaces.insert(face);
+			if (!adjFace->tagged && !adjFace->isRegular()) {
+				addFaceRing(adjFace);
+			} else {
+				subFaces.insert(adjFace);
+			}
 		}
 	}
 }
@@ -32,7 +39,6 @@ void AdaptiveLevel::addFaceRing(FacePtr face) {
 ModelBuffer *AdaptiveLevel::genBuffer(bool smooth) {
 	ModelBuffer *buffer = new ModelBuffer;
 	unsigned int index = 0;
-	FaceSet levelFaces;
 
 	// Why it is not working?
 	/*
@@ -41,18 +47,25 @@ ModelBuffer *AdaptiveLevel::genBuffer(bool smooth) {
 						std::inserter(levelFaces, levelFaces.end()));
 						*/
 	for (auto faceIt = level->faces.begin(); faceIt != level->faces.end(); faceIt++) {
-		if (subFaces.count(*faceIt) == 0) {
-			levelFaces.insert(*faceIt);
+		FacePtr face = *faceIt;
+
+		if (face->wasTagged) {
+			levelFaces.insert(face);
+
+			if (!face->tagged) {
+				fullFaces.insert(face);
+			}
 		}
 	}
 
 	if (verbose) {
-		cout << "Faces in level: " << level->faces.size() << endl;
+		cout << "Faces in control mesh: " << level->faces.size() << endl;
 		cout << "Faces to subdivide: " << subFaces.size() << endl;
-		cout << "Faces to render in level: " << levelFaces.size() << endl;
+		cout << "Faces in level: " << levelFaces.size() << endl;
+		cout << "Faces full in level: " << fullFaces.size() << endl;
 	}
 
-	for (auto faceIt = levelFaces.begin(); faceIt != levelFaces.end(); faceIt++) {
+	for (auto faceIt = fullFaces.begin(); faceIt != fullFaces.end(); faceIt++) {
 		FacePtr face = *faceIt;
 		std::vector<unsigned int> *indices;
 

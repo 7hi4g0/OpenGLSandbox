@@ -42,13 +42,24 @@ AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel) {
 
 		if (face->numVertices != 4) {
 			prevLevel->addFaceRing(face);
+
+			// Mark adjacents for subdivision
+			for (int vert = 0; vert < face->numVertices; vert++) {
+				PositionPtr pos = face->pos[vert];
+
+				for (auto faceIt = pos->faces.begin(); faceIt != pos->faces.end(); faceIt++) {
+					FacePtr face = *faceIt;
+
+					prevLevel->addFaceRing(face);
+				}
+			}
 		}
 	}
 
 	for (auto posIt = prevLevel->level->pos.begin(); posIt != prevLevel->level->pos.end(); posIt++) {
 		PositionPtr pos = *posIt;
 
-		if (pos->edges.size() != 4) {
+		if (pos->isExtraordinary()) {
 			for (auto faceIt = pos->faces.begin(); faceIt != pos->faces.end(); faceIt++) {
 				FacePtr face = *faceIt;
 

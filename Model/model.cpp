@@ -117,6 +117,20 @@ Vertex Face::facePos() const {
 	return facePos;
 }
 
+bool Face::isRegular() const {
+	if (numVertices != 4) {
+		return false;
+	}
+
+	for (int vert = 0; vert < numVertices; vert++) {
+		if (pos[vert]->isExtraordinary()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 Edge::Edge(PositionPtr p, PositionPtr q) {
 	if (*p < *q) {
 		v0 = p;
@@ -293,6 +307,32 @@ Vertex Position::vertexNormal() const {
 	normal = normal / this->faces.size();
 
 	return normal;
+}
+
+bool Position::isExtraordinary() const {
+	int n;
+	int faceCount;
+
+	n = edges.size();
+	faceCount = faces.size();
+
+	if (faceCount < n) {
+		n *= -1;
+	} else if (faceCount > n) {
+		cerr << "Unsupported: More faces than edges!" << endl;
+		exit(1);
+	}
+
+	switch (n) {
+			// Regular
+		case 4:
+			// Regular boundary
+		case -2:
+		case -3:
+			return false;
+		default:
+			return true;
+	}
 }
 
 size_t PositionHash::operator() (const PositionPtr p) const {

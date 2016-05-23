@@ -61,9 +61,14 @@ struct Face {
 	VertexPtr normals[4];
 	EdgePtr edges[4];
 
+	bool tagged = false;
+	bool wasTagged = true;
+
 	bool operator<(const Face) const;
 
 	Vertex facePos() const;
+
+	bool isRegular() const;
 };
 typedef std::unordered_set<FacePtr> FaceSet;
 
@@ -109,6 +114,8 @@ struct Position {
 
 	Vertex vertexPos() const;
 	Vertex vertexNormal() const;
+
+	bool isExtraordinary() const;
 };
 
 struct PositionHash {
