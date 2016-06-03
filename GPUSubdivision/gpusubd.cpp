@@ -3,7 +3,7 @@
 AdaptiveSubSurf::AdaptiveSubSurf(const char * const filename) {
 	AdaptiveLevel *baseLevel = new AdaptiveLevel;
 
-	baseLevel->level = loadObjModel(filename);
+	baseLevel->mesh = loadObjModel(filename);
 
 	subLevels.push_back(baseLevel);
 	levels = 1;
@@ -29,15 +29,21 @@ void AdaptiveSubSurf::subdivide(int levels) {
 }
 
 void AdaptiveSubSurf::genBuffers() {
+	int level = 1;
 	for (auto levelIt = subLevels.begin(); levelIt != subLevels.end(); levelIt++) {
 		(*levelIt)->genBuffers();
+		(*levelIt)->genFaceSets();
+		(*levelIt)->setBuffersData();
+
+		cout << "Level " << level << endl;
+		cout << "Full indices: " << (*levelIt)->fullIndices << endl;
 	}
 }
 
 AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel) {
 	AdaptiveLevel *newLevel = new AdaptiveLevel;
 
-	for (auto faceIt = prevLevel->level->faces.begin(); faceIt != prevLevel->level->faces.end(); faceIt++) {
+	for (auto faceIt = prevLevel->mesh->faces.begin(); faceIt != prevLevel->mesh->faces.end(); faceIt++) {
 		FacePtr face = *faceIt;
 
 		if (face->numVertices != 4) {
@@ -56,7 +62,7 @@ AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel) {
 		}
 	}
 
-	for (auto posIt = prevLevel->level->pos.begin(); posIt != prevLevel->level->pos.end(); posIt++) {
+	for (auto posIt = prevLevel->mesh->pos.begin(); posIt != prevLevel->mesh->pos.end(); posIt++) {
 		PositionPtr pos = *posIt;
 
 		if (pos->isExtraordinary()) {
@@ -68,5 +74,5 @@ AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel) {
 		}
 	}
 
-	newLevel->level = CatmullClark(&prevLevel->subFaces);
+	newLevel->mesh = CatmullClark(&prevLevel->subFaces);
 }

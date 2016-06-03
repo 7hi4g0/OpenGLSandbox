@@ -66,10 +66,15 @@ Model* Subdivide(FaceSet *faces) {
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge;
+				std::pair<EdgeSet::iterator, bool> ret;
 
 				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
-				edge = *newModel->edges.insert(edge).first;
+				ret = newModel->edges.insert(edge);
+				if (!ret.second) {
+					delete edge;
+				}
+				edge = *ret.first;
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);
@@ -131,10 +136,15 @@ Model* CatmullClark(FaceSet *faces) {
 
 			for (int i = 0; i < 4; i++) {
 				EdgePtr edge;
+				std::pair<EdgeSet::iterator, bool> ret;
 
 				edge = new Edge(subface->pos[i], subface->pos[(i + 1) % 4]);
 
-				edge = *newModel->edges.insert(edge).first;
+				ret = newModel->edges.insert(edge);
+				if (!ret.second) {
+					delete edge;
+				}
+				edge = *ret.first;
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);

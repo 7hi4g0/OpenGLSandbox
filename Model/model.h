@@ -100,6 +100,8 @@ typedef std::unordered_set<EdgePtr, EdgeHash, EdgeEquality> EdgeSet;
 struct Position {
 	Vertex v;
 
+	unsigned int idx;
+
 	EdgeSet edges;
 	FaceSet faces;
 

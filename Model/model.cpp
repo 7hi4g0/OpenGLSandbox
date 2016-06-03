@@ -448,10 +448,15 @@ Model *loadObjModel(const char * const filename) {
 
 			for (int i = 0; i < face->numVertices; i++) {
 				EdgePtr edge;
+				std::pair<EdgeSet::iterator, bool> ret;
 
 				edge = new Edge(face->pos[i], face->pos[(i + 1) % face->numVertices]);
 
-				edge = *model->edges.insert(edge).first;
+				ret = model->edges.insert(edge);
+				if (!ret.second) {
+					delete edge;
+				}
+				edge = *ret.first;
 
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);

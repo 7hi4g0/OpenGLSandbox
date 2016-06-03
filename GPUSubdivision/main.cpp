@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <glcommon.h>
 #include <winsys.h>
 #include <matrix4.h>
@@ -24,8 +26,8 @@ static GLuint lineProgram;
 static GLuint flatProgram;
 static GLuint smoothProgram;
 static GLint maxTessLevel;
-static GLfloat outerLevel;
-static GLfloat innerLevel;
+static GLfloat outerTessLevel;
+static GLfloat innerTessLevel;
 static Matrix4 modelview;
 static Matrix4 projection;
 static float angle;
@@ -98,15 +100,15 @@ int main(int argc, char *argv[]) {
 	model->subdivide(levels);
 	model->genBuffers();
 
-	GLint innerLevelUniform;
-	GLint outerLevelUniform;
+	GLint innerTessLevelUniform;
+	GLint outerTessLevelUniform;
 	GLint modelviewUniform;
 	GLint projectionUniform;
 	GLint lightPosUniform;
 	GLint colorUniform;
 
-	innerLevel = 2.0f;
-	outerLevel = 2.0f;
+	innerTessLevel = 2.0f;
+	outerTessLevel = 2.0f;
 
 	lightPos[0] = (Vertex) {1.5f, 1.5f, 0.0f};
 	lightPos[1] = (Vertex) {-1.5f, 1.5f, 0.0f};
@@ -132,49 +134,55 @@ int main(int argc, char *argv[]) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		innerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
-		outerLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
-		modelviewUniform = glGetUniformLocation(vertProgram, "uModelView");	GLERR();
-		projectionUniform = glGetUniformLocation(vertProgram, "uProjection");	GLERR();
-		lightPosUniform = glGetUniformLocation(vertProgram, "uLightPos");	GLERR();
-		colorUniform = glGetUniformLocation(vertProgram, "uColor");	GLERR();
+		innerTessLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
+		outerTessLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
+		modelviewUniform = glGetUniformLocation(quadProgram, "uModelView");	GLERR();
+		projectionUniform = glGetUniformLocation(quadProgram, "uProjection");	GLERR();
+		lightPosUniform = glGetUniformLocation(quadProgram, "uLightPos");	GLERR();
+		colorUniform = glGetUniformLocation(quadProgram, "uColor");	GLERR();
 
-		glProgramUniform1fv(quadProgram, innerLevelUniform, 1, &innerLevel);	GLERR();
-		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
-		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
-		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+		glProgramUniformMatrix4fv(quadProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
+		glProgramUniformMatrix4fv(quadProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+		glProgramUniform3fv(quadProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+
+		int lastLevel = model->levels - 1;
+		GLfloat innerTess = innerTessLevel;
+		GLfloat outerTess = outerTessLevel;
 
 		for (int level = 0; level < model->levels; level++) {
 			AdaptiveLevel *subLevel = model->subLevels[level];
 
-			glProgramUniform3fv(vertProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
+			glProgramUniform1fv(quadProgram, innerTessLevelUniform, 1, &innerTess);	GLERR();
+			glProgramUniform1fv(quadProgram, outerTessLevelUniform, 1, &outerTess);	GLERR();
+			glProgramUniform3fv(quadProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
 
 			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
 			validatePipeline(pipeline);
 
-			glPatchParameteri(GL_PATCH_VERTICES, 4);
+			glPatchParameteri(GL_PATCH_VERTICES, 16);
 
 			glBindVertexArray(subLevel->vao);
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->quadIndexBuffer);
-			glDrawElements(GL_PATCHES, subLevel->quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
+			if (level == lastLevel) {
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelRegularIndexBuffer);
+				glDrawElements(GL_PATCHES, subLevel->levelRegularIndices, GL_UNSIGNED_INT, 0);	GLERR();
 
-			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, triProgram);	GLERR();
-			validatePipeline(pipeline);
+				/*
+				glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, 0);	GLERR();
+				validatePipeline(pipeline);
 
-			glPatchParameteri(GL_PATCH_VERTICES, 3);
-
-			innerLevelUniform = glGetUniformLocation(triProgram, "tessLevelInner");
-			outerLevelUniform = glGetUniformLocation(triProgram, "tessLevelOuter");
-
-			glProgramUniform1fv(triProgram, innerLevelUniform, 1, &innerLevel);
-			glProgramUniform1fv(triProgram, outerLevelUniform, 1, &outerLevel);
-
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->triIndexBuffer);
-			glDrawElements(GL_PATCHES, subLevel->triIndices, GL_UNSIGNED_INT, 0);	GLERR();
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelRegularIndexBuffer);
+				glDrawElements(GL_TRIANGLES, subLevel->levelRegularIndices, GL_UNSIGNED_INT, 0);	GLERR();
+				*/
+			} else {
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->fullIndexBuffer);
+				glDrawElements(GL_PATCHES, subLevel->fullIndices, GL_UNSIGNED_INT, 0);	GLERR();
+			}
 
 			glBindVertexArray(0);
+
+			innerTess = std::max(innerTess / 2.0f, 1.0f);
+			outerTess = std::max(outerTess / 2.0f, 1.0f);
 		}
 
 		EndDraw(ctx);	GLERR();
@@ -192,8 +200,6 @@ void setPipeline() {
 	GLuint smoothFShader;
 	GLuint quadTCShader;
 	GLuint quadTEShader;
-	GLuint triTCShader;
-	GLuint triTEShader;
 	GLuint lineGShader;
 	GLuint flatGShader;
 
@@ -206,31 +212,25 @@ void setPipeline() {
 	smoothFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	quadTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
 	quadTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
-	triTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
-	triTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
 	flatGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-	setShader(vertexShader, SHADER_DIR "duoLight.vert");	GLERR();
+	setShader(vertexShader, SHADER_DIR "duoLightAdaptive.vert");	GLERR();
 	setShader(flatFShader, SHADER_DIR "flat.frag");	GLERR();
 	setShader(smoothFShader, SHADER_DIR "smooth.frag");	GLERR();
-	setShader(quadTCShader, SHADER_DIR "quadConstant.tesc");	GLERR();
-	setShader(quadTEShader, SHADER_DIR "quadInterpolate.tese");	GLERR();
-	setShader(triTCShader, SHADER_DIR "triConstant.tesc");	GLERR();
-	setShader(triTEShader, SHADER_DIR "triInterpolate.tese");	GLERR();
+	setShader(quadTCShader, SHADER_DIR "adaptiveConstant.tesc");	GLERR();
+	setShader(quadTEShader, SHADER_DIR "adaptiveInterpolate2.tese");	GLERR();
 	setShader(lineGShader, SHADER_DIR "line.geom");	GLERR();
 	setShader(flatGShader, SHADER_DIR "flat.geom");	GLERR();
 
 	vertProgram = glCreateProgram();
 	quadProgram = glCreateProgram();
-	triProgram = glCreateProgram();
 	lineProgram = glCreateProgram();
 	flatProgram = glCreateProgram();
 	smoothProgram = glCreateProgram();
 
 	glProgramParameteri(vertProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(quadProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
-	glProgramParameteri(triProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(lineProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(flatProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(smoothProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
@@ -241,10 +241,6 @@ void setPipeline() {
 	//Quad Tess Shaders
 	glAttachShader(quadProgram, quadTCShader);	GLERR();
 	glAttachShader(quadProgram, quadTEShader);	GLERR();
-
-	//Tri Tess Shaders
-	glAttachShader(triProgram, triTCShader);	GLERR();
-	glAttachShader(triProgram, triTEShader);	GLERR();
 
 	//Line Geom Shader
 	glAttachShader(lineProgram, lineGShader);	GLERR();
@@ -259,7 +255,6 @@ void setPipeline() {
 
 	linkProgram(vertProgram);	GLERR();
 	linkProgram(quadProgram);	GLERR();
-	linkProgram(triProgram);	GLERR();
 	linkProgram(lineProgram);	GLERR();
 	linkProgram(flatProgram);	GLERR();
 	linkProgram(smoothProgram);	GLERR();
@@ -269,8 +264,6 @@ void setPipeline() {
 	glDeleteShader(smoothFShader);
 	glDeleteShader(quadTCShader);
 	glDeleteShader(quadTEShader);
-	glDeleteShader(triTCShader);
-	glDeleteShader(triTEShader);
 	glDeleteShader(lineGShader);
 	glDeleteShader(flatGShader);
 
@@ -293,35 +286,35 @@ KEY_PRESS(keyPress) {
 
 	switch(keysym = XLookupKeysym(xkey, 0)) {
 		case (XK_o):
-			if (outerLevel < maxTessLevel) {
-				outerLevel += 1;
+			if (outerTessLevel < maxTessLevel) {
+				outerTessLevel += 1;
 			}
 			if (verbose) {
-				cout << "Current Outer Tess Level: " << outerLevel << endl;
+				cout << "Current Outer Tess Level: " << outerTessLevel << endl;
 			}
 			break;
 		case (XK_l):
-			if (outerLevel > 1) {
-				outerLevel -= 1;
+			if (outerTessLevel > 1) {
+				outerTessLevel -= 1;
 			}
 			if (verbose) {
-				cout << "Current Outer Tess Level: " << outerLevel << endl;
+				cout << "Current Outer Tess Level: " << outerTessLevel << endl;
 			}
 			break;
 		case (XK_i):
-			if (innerLevel < maxTessLevel) {
-				innerLevel += 1;
+			if (innerTessLevel < maxTessLevel) {
+				innerTessLevel += 1;
 			}
 			if (verbose) {
-				cout << "Current Inner Tess Level: " << innerLevel << endl;
+				cout << "Current Inner Tess Level: " << innerTessLevel << endl;
 			}
 			break;
 		case (XK_k):
-			if (innerLevel > 1) {
-				innerLevel -= 1;
+			if (innerTessLevel > 1) {
+				innerTessLevel -= 1;
 			}
 			if (verbose) {
-				cout << "Current Inner Tess Level: " << innerLevel << endl;
+				cout << "Current Inner Tess Level: " << innerTessLevel << endl;
 			}
 			break;
 		case (XK_g):
