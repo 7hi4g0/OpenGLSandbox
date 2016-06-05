@@ -98,6 +98,18 @@ PositionPtr DirFace::vert() {
 	return face->pos[index];
 }
 
+PositionPtr DirFace::next() {
+	return face->pos[(index + 1) % face->numVertices];
+}
+
+PositionPtr DirFace::diag() {
+	return face->pos[(index + 2) % face->numVertices];
+}
+
+PositionPtr DirFace::prev() {
+	return face->pos[(index + 3) % face->numVertices];
+}
+
 AdaptiveLevel::AdaptiveLevel() {
 	mesh = NULL;
 	adaptiveBuffer = NULL;
@@ -156,7 +168,7 @@ void AdaptiveLevel::genFaceSets() {
 
 void AdaptiveLevel::genBuffers() {
 	glGenVertexArrays(1, &vao);
-	glGenBuffers(4, &vbo[0]);
+	glGenBuffers(6, &vbo[0]);
 }
 
 void AdaptiveLevel::setBuffersData() {
@@ -169,6 +181,8 @@ void AdaptiveLevel::setBuffersData() {
 	fullIndices = adaptiveBuffer->fullIndices.size();
 	levelRegularIndices = adaptiveBuffer->levelRegularIndices.size();
 	levelIrregularIndices = adaptiveBuffer->levelIrregularIndices.size();
+	vertexValence = adaptiveBuffer->vertexValence.size();
+	vertexValenceIndices = adaptiveBuffer->vertexValenceIndices.size();
 
 	// Should I keep this? How?
 	/*
@@ -186,7 +200,7 @@ void AdaptiveLevel::setBuffersData() {
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(adaptiveBuffer->verts[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, fullIndices * sizeof(unsigned int), &(adaptiveBuffer->fullIndices[0]), GL_STATIC_DRAW);
@@ -196,6 +210,15 @@ void AdaptiveLevel::setBuffersData() {
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, levelIrregularIndices * sizeof(unsigned int), &(adaptiveBuffer->levelIrregularIndices[0]), GL_STATIC_DRAW);
+
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo[4]);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, vertexValence * sizeof(unsigned int), &(adaptiveBuffer->vertexValence[0]), GL_STATIC_DRAW);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+	glBufferData(GL_ARRAY_BUFFER, vertexValenceIndices * sizeof(unsigned int), &(adaptiveBuffer->vertexValenceIndices[0]), GL_STATIC_DRAW);
+	glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 0, 0);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -211,6 +234,7 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 
 		vert->idx = buffer->verts.size();
 		buffer->verts.push_back(vert->v);
+		buffer->vertexValenceIndices.push_back(0);
 	}
 
 	for (auto faceIt = fullFaces.begin(); faceIt != fullFaces.end(); faceIt++) {
@@ -220,6 +244,8 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 			addFaceControlPoints(face, buffer->fullIndices);
 		}
 	}
+
+	buffer->vertexValence.push_back(0); // pad
 
 	for (auto faceIt = levelFaces.begin(); faceIt != levelFaces.end(); faceIt++) {
 		FacePtr face = *faceIt;
@@ -234,6 +260,28 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 			buffer->levelIrregularIndices.push_back(face->pos[2]->idx);
 			buffer->levelIrregularIndices.push_back(face->pos[3]->idx);
 			buffer->levelIrregularIndices.push_back(face->pos[0]->idx);
+
+			for (unsigned int vert = 0; vert < 4; vert++) {
+				PositionPtr pos = face->pos[vert];
+
+				if (buffer->vertexValenceIndices[pos->idx] == 0) {
+					buffer->vertexValenceIndices[pos->idx] = buffer->vertexValence.size();
+
+					buffer->vertexValence.push_back(pos->edges.size());
+
+					DirFace dirFace(face, vert);
+					DirFace currFace = dirFace;
+
+					//do {
+					for (int edge = 0; edge < pos->edges.size(); edge++) {
+						buffer->vertexValence.push_back(currFace.next()->idx);
+						buffer->vertexValence.push_back(currFace.diag()->idx);
+
+						currFace = currFace.prevEdge().adjFace();
+					}
+					//} while(currFace != dirFace);
+				}
+			}
 		}
 	}
 

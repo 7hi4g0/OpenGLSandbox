@@ -18,6 +18,9 @@ struct DirFace {
 	DirFace nextEdge();
 	DirFace prevEdge();
 	PositionPtr vert();
+	PositionPtr next();
+	PositionPtr diag();
+	PositionPtr prev();
 };
 
 struct AdaptiveBuffer {
@@ -25,6 +28,8 @@ struct AdaptiveBuffer {
 	std::vector<unsigned int> fullIndices;
 	std::vector<unsigned int> levelRegularIndices;
 	std::vector<unsigned int> levelIrregularIndices;
+	std::vector<unsigned int> vertexValence;
+	std::vector<unsigned int> vertexValenceIndices;
 };
 
 struct AdaptiveLevel {
@@ -39,15 +44,19 @@ struct AdaptiveLevel {
 	GLuint fullIndices;
 	GLuint levelRegularIndices;
 	GLuint levelIrregularIndices;
+	GLuint vertexValence;
+	GLuint vertexValenceIndices;
 
 	GLuint vao;
 	union {
-		GLuint vbo[4];
+		GLuint vbo[6];
 		struct {
 			GLuint posBuffer;
 			GLuint fullIndexBuffer;
 			GLuint levelRegularIndexBuffer;
 			GLuint levelIrregularIndexBuffer;
+			GLuint vertexValenceBuffer;
+			GLuint vertexValenceIndexBuffer;
 		};
 	};
 

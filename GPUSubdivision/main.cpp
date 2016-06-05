@@ -19,15 +19,15 @@ BUTTON_PRESS(buttonPress);
 static GraphicsContext *ctx;
 static AdaptiveSubSurf *model;
 static GLuint pipeline;
-static GLuint vertProgram;
+static GLuint regularProgram;
+static GLuint irregularProgram;
 static GLuint quadProgram;
 static GLuint triProgram;
 static GLuint lineProgram;
 static GLuint flatProgram;
 static GLuint smoothProgram;
 static GLint maxTessLevel;
-static GLfloat outerTessLevel;
-static GLfloat innerTessLevel;
+static GLfloat tessLevel;
 static Matrix4 modelview;
 static Matrix4 projection;
 static float angle;
@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
 
 	ctx = createGraphicsContext();
 
+	ctx->major = 4;
+	ctx->minor = 3;
+
 	CreateWindow(ctx);
 
 	glGetIntegerv(GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
@@ -100,15 +103,13 @@ int main(int argc, char *argv[]) {
 	model->subdivide(levels);
 	model->genBuffers();
 
-	GLint innerTessLevelUniform;
-	GLint outerTessLevelUniform;
+	GLint tessLevelUniform;
 	GLint modelviewUniform;
 	GLint projectionUniform;
 	GLint lightPosUniform;
 	GLint colorUniform;
 
-	innerTessLevel = 2.0f;
-	outerTessLevel = 2.0f;
+	tessLevel = pow(2.0f, levels - 1);
 
 	lightPos[0] = (Vertex) {1.5f, 1.5f, 0.0f};
 	lightPos[1] = (Vertex) {-1.5f, 1.5f, 0.0f};
@@ -128,14 +129,21 @@ int main(int argc, char *argv[]) {
 
 	glBindProgramPipeline(pipeline);	GLERR();
 
+	int lastLevel = model->levels - 1;
+
+	GLuint valencePosBuffer;
+	GLuint valencePosSize = model->subLevels[lastLevel]->vertexValence;
+	glGenBuffers(1, &valencePosBuffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valencePosBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, valencePosSize * sizeof(Vertex), NULL, GL_DYNAMIC_READ);
+
 	loop = true;
 	while(loop) {
 		TreatEvents(ctx);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		innerTessLevelUniform = glGetUniformLocation(quadProgram, "tessLevelInner");	GLERR();
-		outerTessLevelUniform = glGetUniformLocation(quadProgram, "tessLevelOuter");	GLERR();
+		tessLevelUniform = glGetUniformLocation(quadProgram, "tessLevel");	GLERR();
 		modelviewUniform = glGetUniformLocation(quadProgram, "uModelView");	GLERR();
 		projectionUniform = glGetUniformLocation(quadProgram, "uProjection");	GLERR();
 		lightPosUniform = glGetUniformLocation(quadProgram, "uLightPos");	GLERR();
@@ -145,17 +153,15 @@ int main(int argc, char *argv[]) {
 		glProgramUniformMatrix4fv(quadProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
 		glProgramUniform3fv(quadProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 
-		int lastLevel = model->levels - 1;
-		GLfloat innerTess = innerTessLevel;
-		GLfloat outerTess = outerTessLevel;
+		GLfloat tess = tessLevel;
 
 		for (int level = 0; level < model->levels; level++) {
 			AdaptiveLevel *subLevel = model->subLevels[level];
 
-			glProgramUniform1fv(quadProgram, innerTessLevelUniform, 1, &innerTess);	GLERR();
-			glProgramUniform1fv(quadProgram, outerTessLevelUniform, 1, &outerTess);	GLERR();
+			glProgramUniform1fv(quadProgram, tessLevelUniform, 1, &tess);	GLERR();
 			glProgramUniform3fv(quadProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
 
+			glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
 			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
 			validatePipeline(pipeline);
 
@@ -167,13 +173,28 @@ int main(int argc, char *argv[]) {
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelRegularIndexBuffer);
 				glDrawElements(GL_PATCHES, subLevel->levelRegularIndices, GL_UNSIGNED_INT, 0);	GLERR();
 
-				/*
+				modelviewUniform = glGetUniformLocation(irregularProgram, "uModelView");	GLERR();
+				projectionUniform = glGetUniformLocation(irregularProgram, "uProjection");	GLERR();
+				lightPosUniform = glGetUniformLocation(irregularProgram, "uLightPos");	GLERR();
+				colorUniform = glGetUniformLocation(irregularProgram, "uColor");	GLERR();
+
+				glProgramUniformMatrix4fv(irregularProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
+				glProgramUniformMatrix4fv(irregularProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+				glProgramUniform3fv(irregularProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+				glProgramUniform3fv(irregularProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
+
+				glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, irregularProgram);	GLERR();
 				glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, 0);	GLERR();
 				validatePipeline(pipeline);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelRegularIndexBuffer);
-				glDrawElements(GL_TRIANGLES, subLevel->levelRegularIndices, GL_UNSIGNED_INT, 0);	GLERR();
-				*/
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelIrregularIndexBuffer);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, subLevel->posBuffer);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, subLevel->vertexValenceBuffer);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, valencePosBuffer);
+				glDrawElements(GL_TRIANGLES, subLevel->levelIrregularIndices, GL_UNSIGNED_INT, 0);	GLERR();
+
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
 			} else {
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->fullIndexBuffer);
 				glDrawElements(GL_PATCHES, subLevel->fullIndices, GL_UNSIGNED_INT, 0);	GLERR();
@@ -181,21 +202,44 @@ int main(int argc, char *argv[]) {
 
 			glBindVertexArray(0);
 
-			innerTess = std::max(innerTess / 2.0f, 1.0f);
-			outerTess = std::max(outerTess / 2.0f, 1.0f);
+			tess = std::max(tess / 2.0f, 1.0f);
 		}
 
 		EndDraw(ctx);	GLERR();
 
 		msleep(33);
 	}
+	
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	Vertex *valencePosArray = (Vertex *) glMapNamedBufferRange(valencePosBuffer, 0, valencePosSize * sizeof(Vertex), GL_MAP_READ_BIT);	GLERR();
+
+	Vertex *vertices = &model->subLevels[lastLevel]->adaptiveBuffer->verts[0];
+	unsigned int *vertexValence = &model->subLevels[lastLevel]->adaptiveBuffer->vertexValence[0];
+	unsigned int index = 1;
+	while(index < valencePosSize) {
+		unsigned int valence = vertexValence[index] * 2;
+
+		cout << vertexValence[index] << endl;
+		cout << valencePosArray[index] << endl;
+		index++;
+
+		for (unsigned int v = 0; v < valence; v++) {
+			cout << "\t" << vertices[vertexValence[index]] << endl;
+			cout << "\t" << valencePosArray[index] << endl;
+			index++;
+		}
+	}
+
+	glUnmapNamedBuffer(valencePosBuffer);
 
 	DestroyWindow(ctx);
 	return 0;
 }
 
 void setPipeline() {
-	GLuint vertexShader;
+	GLuint regularVShader;
+	GLuint irregularVShader;
 	GLuint flatFShader;
 	GLuint smoothFShader;
 	GLuint quadTCShader;
@@ -207,7 +251,8 @@ void setPipeline() {
 
 	glGenProgramPipelines(1, &pipeline);	GLERR();
 
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	regularVShader = glCreateShader(GL_VERTEX_SHADER);
+	irregularVShader = glCreateShader(GL_VERTEX_SHADER);
 	flatFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	smoothFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	quadTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
@@ -215,7 +260,8 @@ void setPipeline() {
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
 	flatGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-	setShader(vertexShader, SHADER_DIR "duoLightAdaptive.vert");	GLERR();
+	setShader(regularVShader, SHADER_DIR "duoLightAdaptive.vert");	GLERR();
+	setShader(irregularVShader, SHADER_DIR "duoLightIrregularAdaptive.vert");	GLERR();
 	setShader(flatFShader, SHADER_DIR "flat.frag");	GLERR();
 	setShader(smoothFShader, SHADER_DIR "smooth.frag");	GLERR();
 	setShader(quadTCShader, SHADER_DIR "adaptiveConstant.tesc");	GLERR();
@@ -223,20 +269,25 @@ void setPipeline() {
 	setShader(lineGShader, SHADER_DIR "line.geom");	GLERR();
 	setShader(flatGShader, SHADER_DIR "flat.geom");	GLERR();
 
-	vertProgram = glCreateProgram();
+	regularProgram = glCreateProgram();
+	irregularProgram = glCreateProgram();
 	quadProgram = glCreateProgram();
 	lineProgram = glCreateProgram();
 	flatProgram = glCreateProgram();
 	smoothProgram = glCreateProgram();
 
-	glProgramParameteri(vertProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+	glProgramParameteri(regularProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+	glProgramParameteri(irregularProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(quadProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(lineProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(flatProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(smoothProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 
-	//Base Shaders
-	glAttachShader(vertProgram, vertexShader);	GLERR();
+	//Regular Vertex Shaders
+	glAttachShader(regularProgram, regularVShader);	GLERR();
+
+	//Irregular Vertex Shaders
+	glAttachShader(irregularProgram, irregularVShader);	GLERR();
 
 	//Quad Tess Shaders
 	glAttachShader(quadProgram, quadTCShader);	GLERR();
@@ -253,13 +304,15 @@ void setPipeline() {
 	//Smooth Solid Shaders
 	glAttachShader(smoothProgram, smoothFShader);	GLERR();
 
-	linkProgram(vertProgram);	GLERR();
+	linkProgram(regularProgram);	GLERR();
+	linkProgram(irregularProgram);	GLERR();
 	linkProgram(quadProgram);	GLERR();
 	linkProgram(lineProgram);	GLERR();
 	linkProgram(flatProgram);	GLERR();
 	linkProgram(smoothProgram);	GLERR();
 
-	glDeleteShader(vertexShader);
+	glDeleteShader(regularVShader);
+	glDeleteShader(irregularVShader);
 	glDeleteShader(flatFShader);
 	glDeleteShader(smoothFShader);
 	glDeleteShader(quadTCShader);
@@ -267,7 +320,7 @@ void setPipeline() {
 	glDeleteShader(lineGShader);
 	glDeleteShader(flatGShader);
 
-	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, vertProgram);	GLERR();
+	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
 	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
 }
 
@@ -285,38 +338,6 @@ KEY_PRESS(keyPress) {
 	unsigned int currentTime;
 
 	switch(keysym = XLookupKeysym(xkey, 0)) {
-		case (XK_o):
-			if (outerTessLevel < maxTessLevel) {
-				outerTessLevel += 1;
-			}
-			if (verbose) {
-				cout << "Current Outer Tess Level: " << outerTessLevel << endl;
-			}
-			break;
-		case (XK_l):
-			if (outerTessLevel > 1) {
-				outerTessLevel -= 1;
-			}
-			if (verbose) {
-				cout << "Current Outer Tess Level: " << outerTessLevel << endl;
-			}
-			break;
-		case (XK_i):
-			if (innerTessLevel < maxTessLevel) {
-				innerTessLevel += 1;
-			}
-			if (verbose) {
-				cout << "Current Inner Tess Level: " << innerTessLevel << endl;
-			}
-			break;
-		case (XK_k):
-			if (innerTessLevel > 1) {
-				innerTessLevel -= 1;
-			}
-			if (verbose) {
-				cout << "Current Inner Tess Level: " << innerTessLevel << endl;
-			}
-			break;
 		case (XK_g):
 			if ((++geometry) % 2) {
 				glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, flatProgram);	GLERR();

@@ -1,7 +1,9 @@
 #include <glcommon.h>
 
+#ifndef GL_GLEXT_PROTOTYPES
 PFNGLATTACHSHADERPROC 				glAttachShader;
 PFNGLBINDBUFFERPROC 				glBindBuffer;
+PFNGLBINDBUFFERBASEPROC				glBindBufferBase;
 PFNGLBINDPROGRAMPIPELINEPROC 		glBindProgramPipeline;
 PFNGLBINDVERTEXARRAYPROC 			glBindVertexArray;
 PFNGLBUFFERDATAPROC 				glBufferData;
@@ -22,6 +24,7 @@ PFNGLGETSHADERIVPROC				glGetShaderiv;
 PFNGLGETSTRINGIPROC					glGetStringi;
 PFNGLGETUNIFORMLOCATIONPROC 		glGetUniformLocation;
 PFNGLLINKPROGRAMPROC				glLinkProgram;
+PFNGLMEMORYBARRIERPROC				glMemoryBarrier;
 PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;
 PFNGLPROGRAMPARAMETERIPROC 			glProgramParameteri;
 PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
@@ -31,6 +34,7 @@ PFNGLSHADERSOURCEPROC				glShaderSource;
 PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
 PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
 PFNGLVERTEXATTRIBPOINTERPROC 		glVertexAttribPointer;
+#endif
 
 void checkGLErr(const char *file, int line) {
 	GLenum glErr;
@@ -43,9 +47,11 @@ void checkGLErr(const char *file, int line) {
 	}
 }
 
+#ifndef GL_GLEXT_PROTOTYPES
 void initGLFunctions() {
 	getFunction(PFNGLATTACHSHADERPROC, 				glAttachShader);
 	getFunction(PFNGLBINDBUFFERPROC, 				glBindBuffer);
+	getFunction(PFNGLBINDBUFFERBASEPROC, 			glBindBufferBase);
 	getFunction(PFNGLBINDPROGRAMPIPELINEPROC, 		glBindProgramPipeline);
 	getFunction(PFNGLBINDVERTEXARRAYPROC, 			glBindVertexArray);
 	getFunction(PFNGLBUFFERDATAPROC, 				glBufferData);
@@ -66,6 +72,7 @@ void initGLFunctions() {
 	getFunction(PFNGLGETSTRINGIPROC,				glGetStringi);
 	getFunction(PFNGLGETUNIFORMLOCATIONPROC, 		glGetUniformLocation);
 	getFunction(PFNGLLINKPROGRAMPROC,				glLinkProgram);
+	getFunction(PFNGLMEMORYBARRIERPROC,				glMemoryBarrier);
 	getFunction(PFNGLPATCHPARAMETERIPROC, 			glPatchParameteri);
 	getFunction(PFNGLPROGRAMPARAMETERIPROC, 		glProgramParameteri);
 	getFunction(PFNGLPROGRAMUNIFORM1FVPROC, 		glProgramUniform1fv);
@@ -76,3 +83,7 @@ void initGLFunctions() {
 	getFunction(PFNGLVALIDATEPROGRAMPIPELINEPROC,	glValidateProgramPipeline);
 	getFunction(PFNGLVERTEXATTRIBPOINTERPROC, 		glVertexAttribPointer);
 }
+#else
+void initGLFunctions() {
+}
+#endif

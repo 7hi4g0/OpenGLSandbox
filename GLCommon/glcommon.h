@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstdlib>
 
+//#define GL_GLEXT_PROTOTYPES
+
 #include <GL/glcorearb.h>
 #include <GL/glx.h>
 
@@ -23,6 +25,7 @@ using std::endl;
 
 extern	PFNGLATTACHSHADERPROC 				glAttachShader;
 extern	PFNGLBINDBUFFERPROC 				glBindBuffer;
+extern	PFNGLBINDBUFFERBASEPROC				glBindBufferBase;
 extern	PFNGLBINDPROGRAMPIPELINEPROC 		glBindProgramPipeline;
 extern	PFNGLBINDVERTEXARRAYPROC 			glBindVertexArray;
 extern	PFNGLBUFFERDATAPROC 				glBufferData;
@@ -43,6 +46,7 @@ extern	PFNGLGETSHADERIVPROC				glGetShaderiv;
 extern	PFNGLGETSTRINGIPROC					glGetStringi;
 extern	PFNGLGETUNIFORMLOCATIONPROC 		glGetUniformLocation;
 extern	PFNGLLINKPROGRAMPROC				glLinkProgram;
+extern	PFNGLMEMORYBARRIERPROC				glMemoryBarrier;
 extern	PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;
 extern	PFNGLPROGRAMPARAMETERIPROC 			glProgramParameteri;
 extern	PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
@@ -53,13 +57,9 @@ extern	PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
 extern	PFNGLVALIDATEPROGRAMPIPELINEPROC	glValidateProgramPipeline;
 extern	PFNGLVERTEXATTRIBPOINTERPROC 		glVertexAttribPointer;
 
-void initGLFunctions();
-
-#else
-
-void initGLFunctions() {}
-
 #endif //GL_GLEXT_PROTOTYPES
+
+void initGLFunctions();
 
 void checkGLErr(const char *file, int line);
 

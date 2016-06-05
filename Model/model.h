@@ -31,6 +31,7 @@ struct Vertex {
 	float x;
 	float y;
 	float z;
+	float pad;
 
 	friend std::istream& operator>>(std::istream&, Vertex&);
 	friend std::ostream& operator<<(std::ostream&, const Vertex&);

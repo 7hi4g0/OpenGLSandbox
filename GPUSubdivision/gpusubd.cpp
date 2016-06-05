@@ -35,7 +35,7 @@ void AdaptiveSubSurf::genBuffers() {
 		(*levelIt)->genFaceSets();
 		(*levelIt)->setBuffersData();
 
-		cout << "Level " << level << endl;
+		cout << "Level " << level++ << endl;
 		cout << "Full indices: " << (*levelIt)->fullIndices << endl;
 	}
 }
