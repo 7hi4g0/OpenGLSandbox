@@ -113,8 +113,8 @@ PositionPtr DirFace::prev() {
 AdaptiveLevel::AdaptiveLevel() {
 	mesh = NULL;
 	adaptiveBuffer = NULL;
+	topologyBuffer = NULL;
 
-	vertices = 0;
 	fullIndices = 0;
 	levelRegularIndices = 0;
 	levelIrregularIndices = 0;
@@ -124,11 +124,23 @@ AdaptiveLevel::AdaptiveLevel() {
 	vbo[1] = 0;
 	vbo[2] = 0;
 	vbo[3] = 0;
+	vbo[4] = 0;
+	vbo[5] = 0;
+	vbo[6] = 0;
+}
+
+void AdaptiveLevel::addFace(FacePtr face) {
+	subFaces.insert(face);
+
+	for (int vertex = 0; vertex < face->numVertices; vertex++) {
+		subEdges.insert(face->edges[vertex]);
+		subVertices.insert(face->pos[vertex]);
+	}
 }
 
 void AdaptiveLevel::addFaceRing(FacePtr face) {
 	face->tagged = true;
-	subFaces.insert(face);
+	addFace(face);
 
 	for (int vertice = 0; vertice < face->numVertices; vertice++) {
 		PositionPtr pos = face->pos[vertice];
@@ -139,7 +151,7 @@ void AdaptiveLevel::addFaceRing(FacePtr face) {
 			if (!adjFace->tagged && !adjFace->isRegular()) {
 				addFaceRing(adjFace);
 			} else {
-				subFaces.insert(adjFace);
+				addFace(adjFace);
 			}
 		}
 	}
@@ -166,23 +178,22 @@ void AdaptiveLevel::genFaceSets() {
 	}
 }
 
-void AdaptiveLevel::genBuffers() {
+void AdaptiveLevel::genBuffers(GLuint verticesBuffer, GLuint valenceIndicesBuffer) {
 	glGenVertexArrays(1, &vao);
-	glGenBuffers(6, &vbo[0]);
+	glGenBuffers(3, &vbo[1]);
+	vbo[0] = verticesBuffer;
+	vbo[4] = valenceIndicesBuffer;
 }
 
-void AdaptiveLevel::setBuffersData() {
+void AdaptiveLevel::setBuffersData(VerticesBuffer *vertsBuffer) {
 	if (adaptiveBuffer != NULL) {
 		delete adaptiveBuffer;
 	}
-	adaptiveBuffer = genAdaptiveBuffer();
+	adaptiveBuffer = genAdaptiveBuffer(vertsBuffer);
 
-	vertices = adaptiveBuffer->verts.size();
 	fullIndices = adaptiveBuffer->fullIndices.size();
 	levelRegularIndices = adaptiveBuffer->levelRegularIndices.size();
 	levelIrregularIndices = adaptiveBuffer->levelIrregularIndices.size();
-	vertexValence = adaptiveBuffer->vertexValence.size();
-	vertexValenceIndices = adaptiveBuffer->vertexValenceIndices.size();
 
 	// Should I keep this? How?
 	/*
@@ -199,7 +210,6 @@ void AdaptiveLevel::setBuffersData() {
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices * sizeof(Vertex), &(adaptiveBuffer->verts[0]), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[1]);
@@ -211,13 +221,7 @@ void AdaptiveLevel::setBuffersData() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, levelIrregularIndices * sizeof(unsigned int), &(adaptiveBuffer->levelIrregularIndices[0]), GL_STATIC_DRAW);
 
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo[4]);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, vertexValence * sizeof(unsigned int), &(adaptiveBuffer->vertexValence[0]), GL_STATIC_DRAW);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
-	glBufferData(GL_ARRAY_BUFFER, vertexValenceIndices * sizeof(unsigned int), &(adaptiveBuffer->vertexValenceIndices[0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
 	glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 0, 0);
 
 	glEnableVertexAttribArray(0);
@@ -226,16 +230,8 @@ void AdaptiveLevel::setBuffersData() {
 	glBindVertexArray(0);
 }
 
-AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
+AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer(VerticesBuffer *vertsBuffer) {
 	AdaptiveBuffer *buffer = new AdaptiveBuffer();
-
-	for (auto vertIt = mesh->pos.begin(); vertIt != mesh->pos.end(); vertIt++) {
-		PositionPtr vert = *vertIt;
-
-		vert->idx = buffer->verts.size();
-		buffer->verts.push_back(vert->v);
-		buffer->vertexValenceIndices.push_back(0);
-	}
 
 	for (auto faceIt = fullFaces.begin(); faceIt != fullFaces.end(); faceIt++) {
 		FacePtr face = *faceIt;
@@ -244,8 +240,6 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 			addFaceControlPoints(face, buffer->fullIndices);
 		}
 	}
-
-	buffer->vertexValence.push_back(0); // pad
 
 	for (auto faceIt = levelFaces.begin(); faceIt != levelFaces.end(); faceIt++) {
 		FacePtr face = *faceIt;
@@ -264,18 +258,18 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 			for (unsigned int vert = 0; vert < 4; vert++) {
 				PositionPtr pos = face->pos[vert];
 
-				if (buffer->vertexValenceIndices[pos->idx] == 0) {
-					buffer->vertexValenceIndices[pos->idx] = buffer->vertexValence.size();
+				if (vertsBuffer->vertexValenceIndices[pos->idx] == 0) {
+					vertsBuffer->vertexValenceIndices[pos->idx] = vertsBuffer->vertexValence.size();
 
-					buffer->vertexValence.push_back(pos->edges.size());
+					vertsBuffer->vertexValence.push_back(pos->edges.size());
 
 					DirFace dirFace(face, vert);
 					DirFace currFace = dirFace;
 
 					//do {
 					for (int edge = 0; edge < pos->edges.size(); edge++) {
-						buffer->vertexValence.push_back(currFace.next()->idx);
-						buffer->vertexValence.push_back(currFace.diag()->idx);
+						vertsBuffer->vertexValence.push_back(currFace.next()->idx);
+						vertsBuffer->vertexValence.push_back(currFace.diag()->idx);
 
 						currFace = currFace.prevEdge().adjFace();
 					}
@@ -286,4 +280,96 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer() {
 	}
 
 	return buffer;
+}
+
+void AdaptiveLevel::genCatmullClarkTable() {
+	if (topologyBuffer != NULL) {
+		delete topologyBuffer;
+	}
+	topologyBuffer = new TopologyBuffer;
+
+	for (auto faceIt = subFaces.begin(); faceIt != subFaces.end(); faceIt++) {
+		FacePtr face = *faceIt;
+
+		topologyBuffer->adjacencyIndices.push_back(topologyBuffer->adjacency.size());
+		topologyBuffer->adjacency.push_back(face->newIdx);
+		topologyBuffer->adjacency.push_back(face->numVertices);
+
+		for (int vert = 0; vert < face->numVertices; vert++) {
+			topologyBuffer->adjacency.push_back(face->pos[vert]->idx);
+		}
+	}
+
+	for (auto edgeIt = subEdges.begin(); edgeIt != subEdges.end(); edgeIt++) {
+		EdgePtr edge = *edgeIt;
+
+		topologyBuffer->adjacencyIndices.push_back(topologyBuffer->adjacency.size());
+
+		topologyBuffer->adjacency.push_back(edge->newIdx);
+
+		if (edge->faceCount == 2) {
+			topologyBuffer->adjacency.push_back(4);
+
+			topologyBuffer->adjacency.push_back(edge->faces[0]->newIdx);
+			topologyBuffer->adjacency.push_back(edge->faces[1]->newIdx);
+		} else {
+			topologyBuffer->adjacency.push_back(2);
+		}
+
+		topologyBuffer->adjacency.push_back(edge->v0->idx);
+		topologyBuffer->adjacency.push_back(edge->v1->idx);
+	}
+
+	for (auto vertexIt = subVertices.begin(); vertexIt != subVertices.end(); vertexIt++) {
+		PositionPtr pos = *vertexIt;
+
+		topologyBuffer->adjacencyIndices.push_back(topologyBuffer->adjacency.size());
+
+		topologyBuffer->adjacency.push_back(pos->newIdx);
+
+		if (pos->edges.size() > pos->faces.size()) {
+			topologyBuffer->adjacency.push_back(2);
+
+			int creaseEdges = 0;
+
+			for (auto edgeIt = pos->edges.begin(); edgeIt != pos->edges.end(); edgeIt++) {
+				if ((*edgeIt)->faceCount == 1) {
+					creaseEdges++;
+
+					topologyBuffer->adjacency.push_back((*edgeIt)->other(pos)->idx);
+
+					if (creaseEdges > 2) {
+						break;
+					}
+				}
+			}
+		} else {
+			topologyBuffer->adjacency.push_back(pos->edges.size());
+
+			for (auto edgeIt = pos->edges.begin(); edgeIt != pos->edges.end(); edgeIt++) {
+				topologyBuffer->adjacency.push_back((*edgeIt)->other(pos)->idx);
+			}
+
+			for (auto faceIt = pos->faces.begin(); faceIt != pos->faces.end(); faceIt++) {
+				topologyBuffer->adjacency.push_back((*faceIt)->newIdx);
+			}
+		}
+
+		topologyBuffer->adjacency.push_back(pos->idx);
+	}
+}
+
+void AdaptiveLevel::genTopologyBuffers() {
+	glGenBuffers(2, &vbo[5]);
+}
+
+void AdaptiveLevel::setTopologyBuffers() {
+	adjacency = topologyBuffer->adjacency.size();
+	adjacencyIndices = topologyBuffer->adjacencyIndices.size();
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, adjacencyBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, adjacency * sizeof(unsigned int), &(topologyBuffer->adjacency[0]), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, adjacencyIndicesBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, adjacencyIndices * sizeof(unsigned int), &(topologyBuffer->adjacencyIndices[0]), GL_DYNAMIC_DRAW);
 }

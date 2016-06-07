@@ -23,51 +23,66 @@ struct DirFace {
 	PositionPtr prev();
 };
 
-struct AdaptiveBuffer {
+struct VerticesBuffer {
 	std::vector<Vertex> verts;
+	std::vector<unsigned int> vertexValence;
+	std::vector<unsigned int> vertexValenceIndices;
+};
+
+struct AdaptiveBuffer {
 	std::vector<unsigned int> fullIndices;
 	std::vector<unsigned int> levelRegularIndices;
 	std::vector<unsigned int> levelIrregularIndices;
-	std::vector<unsigned int> vertexValence;
-	std::vector<unsigned int> vertexValenceIndices;
+};
+
+struct TopologyBuffer {
+	std::vector<unsigned int> adjacency;
+	std::vector<unsigned int> adjacencyIndices;
 };
 
 struct AdaptiveLevel {
 	Model *mesh;
 	AdaptiveBuffer *adaptiveBuffer;
+	TopologyBuffer *topologyBuffer;
 	FaceSet subFaces;
+	EdgeSet subEdges;
+	PositionSet subVertices;
 
 	FaceSet levelFaces;
 	FaceSet fullFaces;
 
-	GLuint vertices;
 	GLuint fullIndices;
 	GLuint levelRegularIndices;
 	GLuint levelIrregularIndices;
-	GLuint vertexValence;
-	GLuint vertexValenceIndices;
+	GLuint adjacency;
+	GLuint adjacencyIndices;
 
 	GLuint vao;
 	union {
-		GLuint vbo[6];
+		GLuint vbo[7];
 		struct {
 			GLuint posBuffer;
 			GLuint fullIndexBuffer;
 			GLuint levelRegularIndexBuffer;
 			GLuint levelIrregularIndexBuffer;
-			GLuint vertexValenceBuffer;
 			GLuint vertexValenceIndexBuffer;
+			GLuint adjacencyBuffer;
+			GLuint adjacencyIndicesBuffer;
 		};
 	};
 
 	AdaptiveLevel();
 
+	void addFace(FacePtr);
 	void addFaceRing(FacePtr);
 
 	void genFaceSets();
-	void genBuffers();
-	void setBuffersData();
-	AdaptiveBuffer *genAdaptiveBuffer();
+	void genBuffers(GLuint, GLuint);
+	void setBuffersData(VerticesBuffer *);
+	AdaptiveBuffer *genAdaptiveBuffer(VerticesBuffer *);
+	void genCatmullClarkTable();
+	void genTopologyBuffers();
+	void setTopologyBuffers();
 };
 
 

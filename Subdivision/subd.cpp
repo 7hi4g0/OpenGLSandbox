@@ -37,6 +37,7 @@ Model* Subdivide(FaceSet *faces) {
 			FacePtr subface(new Face);
 			EdgePtr from;
 			EdgePtr to;
+			PositionPtr vertexPos(new Position);
 			PositionPtr fromPos(new Position);
 			PositionPtr toPos(new Position);
 			VertexPtr normal{new Vertex};
@@ -48,7 +49,8 @@ Model* Subdivide(FaceSet *faces) {
 			to = face->edges[(vertice + face->numVertices - 1) % face->numVertices];
 
 			//Vertice 1
-			subface->pos[0] = *newModel->pos.insert(face->pos[vertice]).first;
+			*vertexPos = *face->pos[vertice];
+			subface->pos[0] = *newModel->pos.insert(vertexPos).first;
 
 			//Vertice 2
 			*fromPos = (*from->v0 + *from->v1) / 2;
@@ -60,6 +62,11 @@ Model* Subdivide(FaceSet *faces) {
 			//Vertice 4
 			*toPos = (*to->v0 + *to->v1) / 2;
 			subface->pos[3] = *newModel->pos.insert(toPos).first;
+
+			subface->pos[0]->idx = face->pos[vertice]->newIdx;
+			subface->pos[1]->idx = from->newIdx;
+			subface->pos[2]->idx = face->newIdx;
+			subface->pos[3]->idx = to->newIdx;
 
 			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
 			normal = *newModel->normals.insert(normal).first;
@@ -79,10 +86,10 @@ Model* Subdivide(FaceSet *faces) {
 				edge->v0->edges.insert(edge);
 				edge->v1->edges.insert(edge);
 
+				subface->edges[i] = edge;
 				subface->normals[i] = normal;
 				subface->pos[i]->faces.insert(subface);
-				edge->faces[edge->faceCount] = subface;
-				edge->faceCount++;
+				edge->faces[edge->faceCount++] = subface;
 			}
 
 			newModel->faces.insert(subface);
@@ -130,6 +137,11 @@ Model* CatmullClark(FaceSet *faces) {
 			//Vertice 4
 			*toPos = to->edgePos();
 			subface->pos[3] = *newModel->pos.insert(toPos).first;
+
+			subface->pos[0]->idx = face->pos[vertice]->newIdx;
+			subface->pos[1]->idx = from->newIdx;
+			subface->pos[2]->idx = face->newIdx;
+			subface->pos[3]->idx = to->newIdx;
 
 			*normal = Vertex::normal(facePos->v, toPos->v, fromPos->v);
 			normal = *newModel->normals.insert(normal).first;

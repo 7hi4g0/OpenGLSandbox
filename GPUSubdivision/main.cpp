@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 	char opt;
 	char *filename;
 
-	filename = (char *) "../Models/suzanne.obj";
+	filename = (char *) "../Models/sphere.obj";
 
 	debug = 0;
 	levels = 3;
@@ -103,6 +103,9 @@ int main(int argc, char *argv[]) {
 	model->subdivide(levels);
 	model->genBuffers();
 
+	model->genCatmullClarkTables();
+	model->gpuCatmullClark();
+
 	GLint tessLevelUniform;
 	GLint modelviewUniform;
 	GLint projectionUniform;
@@ -131,12 +134,6 @@ int main(int argc, char *argv[]) {
 
 	int lastLevel = model->levels - 1;
 
-	GLuint valencePosBuffer;
-	GLuint valencePosSize = model->subLevels[lastLevel]->vertexValence;
-	glGenBuffers(1, &valencePosBuffer);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valencePosBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, valencePosSize * sizeof(Vertex), NULL, GL_DYNAMIC_READ);
-
 	loop = true;
 	while(loop) {
 		TreatEvents(ctx);
@@ -151,7 +148,7 @@ int main(int argc, char *argv[]) {
 
 		glProgramUniformMatrix4fv(quadProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(quadProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-		glProgramUniform3fv(quadProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+		glProgramUniform4fv(quadProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 
 		GLfloat tess = tessLevel;
 
@@ -180,7 +177,7 @@ int main(int argc, char *argv[]) {
 
 				glProgramUniformMatrix4fv(irregularProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 				glProgramUniformMatrix4fv(irregularProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-				glProgramUniform3fv(irregularProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+				glProgramUniform4fv(irregularProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 				glProgramUniform3fv(irregularProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
 
 				glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, irregularProgram);	GLERR();
@@ -188,9 +185,8 @@ int main(int argc, char *argv[]) {
 				validatePipeline(pipeline);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelIrregularIndexBuffer);
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, subLevel->posBuffer);
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, subLevel->vertexValenceBuffer);
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, valencePosBuffer);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, model->verticesBuffer);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, model->valenceBuffer);
 				glDrawElements(GL_TRIANGLES, subLevel->levelIrregularIndices, GL_UNSIGNED_INT, 0);	GLERR();
 
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
@@ -209,29 +205,6 @@ int main(int argc, char *argv[]) {
 
 		msleep(33);
 	}
-	
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	Vertex *valencePosArray = (Vertex *) glMapNamedBufferRange(valencePosBuffer, 0, valencePosSize * sizeof(Vertex), GL_MAP_READ_BIT);	GLERR();
-
-	Vertex *vertices = &model->subLevels[lastLevel]->adaptiveBuffer->verts[0];
-	unsigned int *vertexValence = &model->subLevels[lastLevel]->adaptiveBuffer->vertexValence[0];
-	unsigned int index = 1;
-	while(index < valencePosSize) {
-		unsigned int valence = vertexValence[index] * 2;
-
-		cout << vertexValence[index] << endl;
-		cout << valencePosArray[index] << endl;
-		index++;
-
-		for (unsigned int v = 0; v < valence; v++) {
-			cout << "\t" << vertices[vertexValence[index]] << endl;
-			cout << "\t" << valencePosArray[index] << endl;
-			index++;
-		}
-	}
-
-	glUnmapNamedBuffer(valencePosBuffer);
 
 	DestroyWindow(ctx);
 	return 0;

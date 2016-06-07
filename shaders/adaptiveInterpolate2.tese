@@ -4,7 +4,7 @@ layout(quads, equal_spacing, ccw) in;
 
 uniform mat4 uModelView;
 uniform mat4 uProjection;
-uniform vec3 uLightPos[2];
+uniform vec4 uLightPos[2];
 uniform vec3 uColor;
 
 in gl_PerVertex {
@@ -55,7 +55,7 @@ void main() {
 	vec4 normal = normalize(uModelView * vec4(cross(biTangent, tangent), 0.0));
 	vec4 baseColor = vec4(uColor, 0.0);
 
-	gColor = lightColor(normal, uLightPos[0], baseColor) + lightColor(normal, uLightPos[1], baseColor);
+	gColor = lightColor(normal, uLightPos[0].xyz, baseColor) + lightColor(normal, uLightPos[1].xyz, baseColor);
 	gl_Position = uProjection * gl_Position;
 }
 

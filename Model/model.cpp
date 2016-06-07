@@ -169,6 +169,19 @@ bool Edge::operator<(const Edge e) const {
 	}
 }
 
+PositionPtr Edge::other(PositionPtr pos) const {
+	if (v0 == pos) {
+		return v1;
+	}
+
+	if (v1 == pos) {
+		return v0;
+	}
+
+	cerr << "Vertex not in edge" << endl;
+	exit(1);
+}
+
 Vertex Edge::edgePos() const {
 	Vertex edgePos;
 
@@ -275,7 +288,6 @@ Vertex Position::vertexPos() const {
 				}
 
 				creaseEdgesPos = creaseEdgesPos + (*edgeIt)->midPos();
-				degree++;
 			}
 		}
 

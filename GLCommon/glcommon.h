@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 
-//#define GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
 
 #include <GL/glcorearb.h>
 #include <GL/glx.h>

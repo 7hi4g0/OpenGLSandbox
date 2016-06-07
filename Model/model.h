@@ -62,6 +62,8 @@ struct Face {
 	VertexPtr normals[4];
 	EdgePtr edges[4];
 
+	unsigned int newIdx;
+
 	bool tagged = false;
 	bool wasTagged = true;
 
@@ -77,6 +79,8 @@ struct Edge {
 	PositionPtr v0;
 	PositionPtr v1;
 
+	unsigned int newIdx;
+
 	FacePtr faces[2];
 	int faceCount;
 
@@ -85,6 +89,8 @@ struct Edge {
 	bool operator==(const Edge) const;
 	bool operator!=(const Edge) const;
 	bool operator<(const Edge) const;
+
+	PositionPtr other(PositionPtr) const;
 
 	Vertex edgePos() const;
 	Vertex midPos() const;
@@ -102,6 +108,7 @@ struct Position {
 	Vertex v;
 
 	unsigned int idx;
+	unsigned int newIdx;
 
 	EdgeSet edges;
 	FaceSet faces;
