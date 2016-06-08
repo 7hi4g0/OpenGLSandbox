@@ -21,6 +21,8 @@ void main() {
 	vec4 normal = normalize(uModelView * vec4(vNormal, 0.0));
 	vec4 baseColor = vec4(uColor, 0.0);
 
+	gl_Position = gl_Position + (0.01 * normal);
+
 	tcColor = lightColor(normal, uLightPos[0].xyz, baseColor) + lightColor(normal, uLightPos[1].xyz, baseColor);
 	gl_Position = uProjection * gl_Position;
 }

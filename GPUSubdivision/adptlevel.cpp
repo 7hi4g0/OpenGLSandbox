@@ -9,6 +9,18 @@ void addFaceControlPoints(FacePtr face, std::vector<unsigned int> &indicesBuffer
 	int count = 0;
 
 	/*
+	for (int vert = 0; vert < face->numVertices; vert++) {
+		PositionPtr pos = face->pos[vert];
+
+		for (auto edgeIt = pos->edges.begin(); edgeIt != pos->edges.end(); edgeIt++) {
+			EdgePtr edge = *edgeIt;
+
+			if (edge->faceCount == 1) {
+				return;
+			}
+		}
+	}
+
 	EdgePtr topEdge;
 	FacePtr topFace;
 
@@ -247,13 +259,7 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer(VerticesBuffer *vertsBuffer) {
 		if (face->isRegular()) {
 			addFaceControlPoints(face, buffer->levelRegularIndices);
 		} else if (face->numVertices == 4) {
-			buffer->levelIrregularIndices.push_back(face->pos[0]->idx);
-			buffer->levelIrregularIndices.push_back(face->pos[1]->idx);
-			buffer->levelIrregularIndices.push_back(face->pos[2]->idx);
-
-			buffer->levelIrregularIndices.push_back(face->pos[2]->idx);
-			buffer->levelIrregularIndices.push_back(face->pos[3]->idx);
-			buffer->levelIrregularIndices.push_back(face->pos[0]->idx);
+			//bool render = true;
 
 			for (unsigned int vert = 0; vert < 4; vert++) {
 				PositionPtr pos = face->pos[vert];
@@ -262,6 +268,18 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer(VerticesBuffer *vertsBuffer) {
 					vertsBuffer->vertexValenceIndices[pos->idx] = vertsBuffer->vertexValence.size();
 
 					vertsBuffer->vertexValence.push_back(pos->edges.size());
+
+					/*
+					for (auto edgeIt = pos->edges.begin(); edgeIt != pos->edges.end(); edgeIt++) {
+						if ((*edgeIt)->faceCount == 1) {
+							render = false;
+						}
+					}
+
+					if (!render) {
+						break;
+					}
+					*/
 
 					DirFace dirFace(face, vert);
 					DirFace currFace = dirFace;
@@ -276,6 +294,16 @@ AdaptiveBuffer *AdaptiveLevel::genAdaptiveBuffer(VerticesBuffer *vertsBuffer) {
 					//} while(currFace != dirFace);
 				}
 			}
+
+			//if (render) {
+				buffer->levelIrregularIndices.push_back(face->pos[0]->idx);
+				buffer->levelIrregularIndices.push_back(face->pos[1]->idx);
+				buffer->levelIrregularIndices.push_back(face->pos[2]->idx);
+
+				buffer->levelIrregularIndices.push_back(face->pos[2]->idx);
+				buffer->levelIrregularIndices.push_back(face->pos[3]->idx);
+				buffer->levelIrregularIndices.push_back(face->pos[0]->idx);
+			//}
 		}
 	}
 

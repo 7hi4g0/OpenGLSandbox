@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 		glProgramUniform1fv(quadProgram, outerLevelUniform, 1, &outerLevel);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
 		glProgramUniformMatrix4fv(vertProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-		glProgramUniform3fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+		glProgramUniform4fv(vertProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 		glProgramUniform3fv(vertProgram, colorUniform, 1, (float *) &color);	GLERR();
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);

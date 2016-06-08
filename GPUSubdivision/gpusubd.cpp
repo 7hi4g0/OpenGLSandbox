@@ -11,6 +11,9 @@ AdaptiveSubSurf::AdaptiveSubSurf(const char * const filename) {
 		PositionPtr vert = *vertIt;
 
 		vert->idx = index++;
+		if (vert->isExtraordinary()) {
+			vert->tagged = true;
+		}
 	}
 
 	subLevels.push_back(baseLevel);
@@ -170,7 +173,7 @@ AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel, unsigned int verte
 	for (auto posIt = prevLevel->mesh->pos.begin(); posIt != prevLevel->mesh->pos.end(); posIt++) {
 		PositionPtr pos = *posIt;
 
-		if (pos->isExtraordinary()) {
+		if (pos->tagged && pos->isExtraordinary()) {
 			for (auto faceIt = pos->faces.begin(); faceIt != pos->faces.end(); faceIt++) {
 				FacePtr face = *faceIt;
 

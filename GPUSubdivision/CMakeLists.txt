@@ -5,4 +5,4 @@ add_executable(gpusubd-bin main.cpp)
 add_library(gpusubd gpusubd.cpp adptlevel.cpp)
 
 target_link_libraries(gpusubd model subd)
-target_link_libraries(gpusubd-bin winsys pipeline model subd gpusubd glmath GL X11)
+target_link_libraries(gpusubd-bin winsys pipeline model subd gpusubd scene glmath GL X11)

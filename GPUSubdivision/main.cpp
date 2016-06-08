@@ -6,6 +6,7 @@
 #include <model.h>
 #include <pipeline.h>
 #include <gpusubd.h>
+#include <scene.h>
 
 using std::cout;
 using std::cerr;
@@ -18,10 +19,12 @@ BUTTON_PRESS(buttonPress);
 
 static GraphicsContext *ctx;
 static AdaptiveSubSurf *model;
-static GLuint pipeline;
+static GLuint pipeline[2];
+static GLuint cageProgram;
 static GLuint regularProgram;
 static GLuint irregularProgram;
 static GLuint quadProgram;
+static GLuint adaptiveProgram;
 static GLuint triProgram;
 static GLuint lineProgram;
 static GLuint flatProgram;
@@ -35,7 +38,9 @@ static float distance;
 static Vertex lightPos[2];
 static Vertex levelColor[6];
 static int levels;
-//static bool smoothNormals;
+static int cageLevel;
+static std::vector<KeyFrame *> cages;
+static bool showCage;
 
 int main(int argc, char *argv[]) {
 	char opt;
@@ -45,6 +50,8 @@ int main(int argc, char *argv[]) {
 
 	debug = 0;
 	levels = 3;
+	cageLevel = 0;
+	showCage = false;
 
 	while ((opt = getopt(argc, argv, ":dvf:l:")) != -1) {
 		switch (opt) {
@@ -106,6 +113,15 @@ int main(int argc, char *argv[]) {
 	model->genCatmullClarkTables();
 	model->gpuCatmullClark();
 
+	for (int level = 0; level < levels; level++) {
+		KeyFrame *cage;
+
+		cage = new KeyFrame(model->subLevels[level]->mesh);
+		cage->genBuffers();
+
+		cages.push_back(cage);
+	}
+
 	GLint tessLevelUniform;
 	GLint modelviewUniform;
 	GLint projectionUniform;
@@ -124,15 +140,15 @@ int main(int argc, char *argv[]) {
 	projection.setPerspective(45, 1, 1, 1000);
 
 	levelColor[0] = (Vertex) {1.0f, 0.0f, 0.0f};
-	levelColor[1] = (Vertex) {1.0f, 1.0f, 0.0f};
-	levelColor[2] = (Vertex) {0.0f, 1.0f, 0.0f};
-	levelColor[3] = (Vertex) {0.0f, 1.0f, 1.0f};
-	levelColor[4] = (Vertex) {0.0f, 0.0f, 1.0f};
+	levelColor[1] = (Vertex) {0.0f, 1.0f, 0.0f};
+	levelColor[2] = (Vertex) {0.0f, 0.0f, 1.0f};
+	levelColor[3] = (Vertex) {1.0f, 1.0f, 0.0f};
+	levelColor[4] = (Vertex) {0.0f, 1.0f, 1.0f};
 	levelColor[5] = (Vertex) {1.0f, 0.0f, 1.0f};
 
-	glBindProgramPipeline(pipeline);	GLERR();
-
 	int lastLevel = model->levels - 1;
+
+	FrameCounter *frameCounter = initFrameCounter();
 
 	loop = true;
 	while(loop) {
@@ -140,27 +156,45 @@ int main(int argc, char *argv[]) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		tessLevelUniform = glGetUniformLocation(quadProgram, "tessLevel");	GLERR();
-		modelviewUniform = glGetUniformLocation(quadProgram, "uModelView");	GLERR();
-		projectionUniform = glGetUniformLocation(quadProgram, "uProjection");	GLERR();
-		lightPosUniform = glGetUniformLocation(quadProgram, "uLightPos");	GLERR();
-		colorUniform = glGetUniformLocation(quadProgram, "uColor");	GLERR();
+		tessLevelUniform = glGetUniformLocation(adaptiveProgram, "tessLevel");	GLERR();
+		modelviewUniform = glGetUniformLocation(adaptiveProgram, "uModelView");	GLERR();
+		projectionUniform = glGetUniformLocation(adaptiveProgram, "uProjection");	GLERR();
+		lightPosUniform = glGetUniformLocation(adaptiveProgram, "uLightPos");	GLERR();
 
-		glProgramUniformMatrix4fv(quadProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
-		glProgramUniformMatrix4fv(quadProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
-		glProgramUniform4fv(quadProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+		glProgramUniformMatrix4fv(adaptiveProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
+		glProgramUniformMatrix4fv(adaptiveProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+		glProgramUniform4fv(adaptiveProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
+
+		modelviewUniform = glGetUniformLocation(cageProgram, "uModelView");	GLERR();
+		projectionUniform = glGetUniformLocation(cageProgram, "uProjection");	GLERR();
+		lightPosUniform = glGetUniformLocation(cageProgram, "uLightPos");	GLERR();
+
+		glProgramUniform1f(quadProgram, 0, 1.0);	GLERR();
+		glProgramUniform1f(quadProgram, 1, 1.0);	GLERR();
+		glProgramUniformMatrix4fv(cageProgram, modelviewUniform, 1, GL_FALSE, &modelview[0]);	GLERR();
+		glProgramUniformMatrix4fv(cageProgram, projectionUniform, 1, GL_FALSE, &projection[0]);	GLERR();
+		glProgramUniform4fv(cageProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 
 		GLfloat tess = tessLevel;
 
 		for (int level = 0; level < model->levels; level++) {
 			AdaptiveLevel *subLevel = model->subLevels[level];
+			KeyFrame *cage = cages[level];
 
-			glProgramUniform1fv(quadProgram, tessLevelUniform, 1, &tess);	GLERR();
-			glProgramUniform3fv(quadProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
+			colorUniform = glGetUniformLocation(adaptiveProgram, "uColor");	GLERR();
 
-			glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
-			glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
-			validatePipeline(pipeline);
+			glProgramUniform1fv(adaptiveProgram, tessLevelUniform, 1, &tess);	GLERR();
+			glProgramUniform3fv(adaptiveProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
+
+			colorUniform = glGetUniformLocation(cageProgram, "uColor");	GLERR();
+
+			glProgramUniform3fv(cageProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
+
+			glBindProgramPipeline(pipeline[0]);	GLERR();
+
+			glUseProgramStages(pipeline[0], GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
+			glUseProgramStages(pipeline[0], GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, adaptiveProgram);	GLERR();
+			validatePipeline(pipeline[0]);
 
 			glPatchParameteri(GL_PATCH_VERTICES, 16);
 
@@ -180,9 +214,9 @@ int main(int argc, char *argv[]) {
 				glProgramUniform4fv(irregularProgram, lightPosUniform, 2, (float *) &lightPos[0]);	GLERR();
 				glProgramUniform3fv(irregularProgram, colorUniform, 1, (float *) &levelColor[level]);	GLERR();
 
-				glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, irregularProgram);	GLERR();
-				glUseProgramStages(pipeline, GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, 0);	GLERR();
-				validatePipeline(pipeline);
+				glUseProgramStages(pipeline[0], GL_VERTEX_SHADER_BIT, irregularProgram);	GLERR();
+				glUseProgramStages(pipeline[0], GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, 0);	GLERR();
+				validatePipeline(pipeline[0]);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->levelIrregularIndexBuffer);
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, model->verticesBuffer);
@@ -194,6 +228,17 @@ int main(int argc, char *argv[]) {
 			} else {
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subLevel->fullIndexBuffer);
 				glDrawElements(GL_PATCHES, subLevel->fullIndices, GL_UNSIGNED_INT, 0);	GLERR();
+			}
+
+			if (showCage && level == cageLevel) {
+				glBindProgramPipeline(pipeline[1]);	GLERR();
+
+				glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+				glBindVertexArray(cage->vao);
+
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cage->quadIndexBuffer);
+				glDrawElements(GL_PATCHES, cage->quadIndices, GL_UNSIGNED_INT, 0);	GLERR();
 			}
 
 			glBindVertexArray(0);
@@ -211,50 +256,66 @@ int main(int argc, char *argv[]) {
 }
 
 void setPipeline() {
+	GLuint cageVShader;
 	GLuint regularVShader;
 	GLuint irregularVShader;
 	GLuint flatFShader;
 	GLuint smoothFShader;
 	GLuint quadTCShader;
 	GLuint quadTEShader;
+	GLuint adaptiveTCShader;
+	GLuint adaptiveTEShader;
 	GLuint lineGShader;
 	GLuint flatGShader;
 
 #define SHADER_DIR	"../shaders/"
 
-	glGenProgramPipelines(1, &pipeline);	GLERR();
+	glGenProgramPipelines(2, &pipeline[0]);	GLERR();
 
+	cageVShader = glCreateShader(GL_VERTEX_SHADER);
 	regularVShader = glCreateShader(GL_VERTEX_SHADER);
 	irregularVShader = glCreateShader(GL_VERTEX_SHADER);
 	flatFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	smoothFShader = glCreateShader(GL_FRAGMENT_SHADER);
 	quadTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
 	quadTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
+	adaptiveTCShader = glCreateShader(GL_TESS_CONTROL_SHADER);
+	adaptiveTEShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
 	lineGShader = glCreateShader(GL_GEOMETRY_SHADER);
 	flatGShader = glCreateShader(GL_GEOMETRY_SHADER);
 
+	setShader(cageVShader, SHADER_DIR "duoLightCage.vert");	GLERR();
 	setShader(regularVShader, SHADER_DIR "duoLightAdaptive.vert");	GLERR();
 	setShader(irregularVShader, SHADER_DIR "duoLightIrregularAdaptive.vert");	GLERR();
 	setShader(flatFShader, SHADER_DIR "flat.frag");	GLERR();
 	setShader(smoothFShader, SHADER_DIR "smooth.frag");	GLERR();
-	setShader(quadTCShader, SHADER_DIR "adaptiveConstant.tesc");	GLERR();
-	setShader(quadTEShader, SHADER_DIR "adaptiveInterpolate2.tese");	GLERR();
+	setShader(quadTCShader, SHADER_DIR "quadConstant.tesc");	GLERR();
+	setShader(quadTEShader, SHADER_DIR "quadInterpolate.tese");	GLERR();
+	setShader(adaptiveTCShader, SHADER_DIR "adaptiveConstant.tesc");	GLERR();
+	setShader(adaptiveTEShader, SHADER_DIR "adaptiveInterpolate2.tese");	GLERR();
 	setShader(lineGShader, SHADER_DIR "line.geom");	GLERR();
 	setShader(flatGShader, SHADER_DIR "flat.geom");	GLERR();
 
+	cageProgram = glCreateProgram();
 	regularProgram = glCreateProgram();
 	irregularProgram = glCreateProgram();
 	quadProgram = glCreateProgram();
+	adaptiveProgram = glCreateProgram();
 	lineProgram = glCreateProgram();
 	flatProgram = glCreateProgram();
 	smoothProgram = glCreateProgram();
 
+	glProgramParameteri(cageProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(regularProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(irregularProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(quadProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+	glProgramParameteri(adaptiveProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(lineProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(flatProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
 	glProgramParameteri(smoothProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);	GLERR();
+
+	//Cage Vertex Shaders
+	glAttachShader(cageProgram, cageVShader);	GLERR();
 
 	//Regular Vertex Shaders
 	glAttachShader(regularProgram, regularVShader);	GLERR();
@@ -265,6 +326,10 @@ void setPipeline() {
 	//Quad Tess Shaders
 	glAttachShader(quadProgram, quadTCShader);	GLERR();
 	glAttachShader(quadProgram, quadTEShader);	GLERR();
+
+	//Adaptive Tess Shaders
+	glAttachShader(adaptiveProgram, adaptiveTCShader);	GLERR();
+	glAttachShader(adaptiveProgram, adaptiveTEShader);	GLERR();
 
 	//Line Geom Shader
 	glAttachShader(lineProgram, lineGShader);	GLERR();
@@ -277,24 +342,34 @@ void setPipeline() {
 	//Smooth Solid Shaders
 	glAttachShader(smoothProgram, smoothFShader);	GLERR();
 
+	linkProgram(cageProgram);	GLERR();
 	linkProgram(regularProgram);	GLERR();
 	linkProgram(irregularProgram);	GLERR();
 	linkProgram(quadProgram);	GLERR();
+	linkProgram(adaptiveProgram);	GLERR();
 	linkProgram(lineProgram);	GLERR();
 	linkProgram(flatProgram);	GLERR();
 	linkProgram(smoothProgram);	GLERR();
 
+	glDeleteShader(cageVShader);
 	glDeleteShader(regularVShader);
 	glDeleteShader(irregularVShader);
 	glDeleteShader(flatFShader);
 	glDeleteShader(smoothFShader);
 	glDeleteShader(quadTCShader);
 	glDeleteShader(quadTEShader);
+	glDeleteShader(adaptiveTCShader);
+	glDeleteShader(adaptiveTEShader);
 	glDeleteShader(lineGShader);
 	glDeleteShader(flatGShader);
 
-	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
-	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+	glUseProgramStages(pipeline[0], GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
+	glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+
+	glUseProgramStages(pipeline[1], GL_VERTEX_SHADER_BIT, cageProgram);	GLERR();
+	glUseProgramStages(pipeline[1], GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
+	glUseProgramStages(pipeline[1], GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+	validatePipeline(pipeline[1]);
 }
 
 void updateModelView() {
@@ -311,16 +386,19 @@ KEY_PRESS(keyPress) {
 	unsigned int currentTime;
 
 	switch(keysym = XLookupKeysym(xkey, 0)) {
+		case (XK_c):
+			showCage = !showCage;
+			break;
 		case (XK_g):
 			if ((++geometry) % 2) {
-				glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, flatProgram);	GLERR();
+				glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, flatProgram);	GLERR();
 			} else {
-				glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+				glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
 			}
 			break;
 		case (XK_s):
-			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
-			glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
+			glUseProgramStages(pipeline[0], GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
+			glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 			geometry = 1;
 			/*
 			smoothNormals = true;
@@ -328,7 +406,7 @@ KEY_PRESS(keyPress) {
 			*/
 			break;
 		case (XK_f):
-			glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
+			glUseProgramStages(pipeline[0], GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
 			/*
 			smoothNormals = false;
@@ -336,14 +414,14 @@ KEY_PRESS(keyPress) {
 			*/
 			break;
 		case (XK_KP_Subtract):
-			if (levels > 0) {
-				levels--;
+			if (cageLevel > 0) {
+				cageLevel--;
 				//setBuffer(model->getLevel(levels));
 			}
 			cout << levels << endl;
 			break;
 		case (XK_KP_Add):
-			if (levels < model->levels - 1) {
+			if (cageLevel < model->levels - 1) {
 			/*
 				if (verbose) {
 					currentTime = getTime();
@@ -353,7 +431,7 @@ KEY_PRESS(keyPress) {
 					cout << (getTime() - currentTime) << " ms - Catmull-Clark" << endl;
 				}
 			*/
-				levels++;
+				cageLevel++;
 			}
 			cout << levels << endl;
 			//setBuffer(model->getLevel(levels));

@@ -8,10 +8,6 @@ uniform vec3 uColor;
 layout(location = 0) in vec4 vVertex;
 layout(location = 1) in uint vValence;
 
-struct Position {
-	float x, y, z;
-};
-
 layout(std430, binding = 0) buffer VertexBuffer {
 	vec3 vertexPosition[];
 };
@@ -19,12 +15,6 @@ layout(std430, binding = 0) buffer VertexBuffer {
 layout(std430, binding = 1) buffer ValenceBuffer {
 	uint vertexValence[];
 };
-
-/*
-layout(std430, binding = 2) buffer ValencePosBuffer {
-	vec3 valencePosition[];
-};
-*/
 
 out gl_PerVertex {
 	vec4 gl_Position;
@@ -47,25 +37,12 @@ void main() {
 	vec3 tangent1 = vec3(0.0);
 	vec3 tangent2 = vec3(0.0);
 
-	//valencePosition[vValence] = vec3(valence);
-
 	if (valence == 4) {
 		vec3 controlPoints[8];
 
 		for (uint i = 0; i < 4; i++) {
-			//Position pos;
-
-			/*
-			pos = vertexPosition[vertexValence[vValence + 2 * i + 0]];
-			controlPoints[2 * i + 0] = vec3(pos.x, pos.y, pos.z);
-			pos = vertexPosition[vertexValence[vValence + 2 * i + 1]];
-			controlPoints[2 * i + 1] = vec3(pos.x, pos.y, pos.z);
-			*/
 			controlPoints[2 * i + 0] = vertexPosition[vertexValence[vValence + 2 * i + 0 + 1]].xyz;
 			controlPoints[2 * i + 1] = vertexPosition[vertexValence[vValence + 2 * i + 1 + 1]].xyz;
-
-			//valencePosition[vValence + 2 * i + 0 + 1] = controlPoints[2 * i + 0];
-			//valencePosition[vValence + 2 * i + 1 + 1] = controlPoints[2 * i + 1];
 		}
 
     	vec3 diag0 =		controlPoints[7] * Bx[0] * By[0]	+	controlPoints[3] * Bx[2] * By[2];						
@@ -107,9 +84,6 @@ void main() {
 			vec3 edge = vertexPosition[vertexValence[vValence + 2 * i + 0 + 1]].xyz;
 			vec3 face = vertexPosition[vertexValence[vValence + 2 * i + 1 + 1]].xyz;
 
-			//valencePosition[vValence + 2 * i + 0 + 1] = edge;
-			//valencePosition[vValence + 2 * i + 1 + 1] = face;
-
 			pos += edge * 4.0 + face;
 
 			float alpha1 = cos((2.0 * PI * i) / fvalence);
@@ -128,10 +102,6 @@ void main() {
 	vec4 normal = normalize(uModelView * vec4(cross(tangent1, tangent2), 0.0));
 	gColor = lightColor(normal, uLightPos[0].xyz, baseColor) + lightColor(normal, uLightPos[1].xyz, baseColor);
 
-	//gl_Position = uModelView * gl_Position;
-	//vec4 normal = normalize(uModelView * vec4(cross(tangent1, tangent2), 0.0));
-
-	//gColor = lightColor(normal, uLightPos[0], baseColor) + lightColor(normal, uLightPos[1], baseColor);
 	gl_Position = uProjection * gl_Position;
 }
 

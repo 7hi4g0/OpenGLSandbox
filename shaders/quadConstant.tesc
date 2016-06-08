@@ -1,9 +1,9 @@
-#version 410 core
+#version 430 core
 
 layout(vertices = 4) out;
 
-uniform float tessLevelOuter;
-uniform float tessLevelInner;
+layout(location = 0) uniform float tessLevelOuter;
+layout(location = 1) uniform float tessLevelInner;
 
 in gl_PerVertex {
 	vec4 gl_Position;

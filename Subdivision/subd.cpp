@@ -30,6 +30,8 @@ Model* Subdivide(FaceSet *faces) {
 
 		if (face->numVertices == 4) {
 			*facePos = *facePos + *face->pos[3];
+		} else {
+			facePos->tagged = true;
 		}
 		*facePos = *facePos / face->numVertices;
 
@@ -62,6 +64,8 @@ Model* Subdivide(FaceSet *faces) {
 			//Vertice 4
 			*toPos = (*to->v0 + *to->v1) / 2;
 			subface->pos[3] = *newModel->pos.insert(toPos).first;
+
+			subface->pos[0]->tagged = face->pos[vertice]->tagged;
 
 			subface->pos[0]->idx = face->pos[vertice]->newIdx;
 			subface->pos[1]->idx = from->newIdx;
@@ -106,6 +110,10 @@ Model* CatmullClark(FaceSet *faces) {
 		FacePtr face = *faceIt;
 		PositionPtr facePos(new Position);
 
+		if (face->numVertices != 4) {
+			facePos->tagged = true;
+		}
+
 		*facePos = face->facePos();
 
 		for (int vertice = 0; vertice < face->numVertices; vertice++) {
@@ -137,6 +145,8 @@ Model* CatmullClark(FaceSet *faces) {
 			//Vertice 4
 			*toPos = to->edgePos();
 			subface->pos[3] = *newModel->pos.insert(toPos).first;
+
+			subface->pos[0]->tagged = face->pos[vertice]->tagged;
 
 			subface->pos[0]->idx = face->pos[vertice]->newIdx;
 			subface->pos[1]->idx = from->newIdx;

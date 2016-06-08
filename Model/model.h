@@ -110,6 +110,8 @@ struct Position {
 	unsigned int idx;
 	unsigned int newIdx;
 
+	bool tagged = false;
+
 	EdgeSet edges;
 	FaceSet faces;
 

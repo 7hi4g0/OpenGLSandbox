@@ -23,6 +23,8 @@ struct KeyFrame {
 		};
 	};
 
+	KeyFrame();
+	KeyFrame(Model *);
 	KeyFrame(const char * const);
 
 	void genBuffers();

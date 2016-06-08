@@ -1,7 +1,6 @@
 #include <keyframe.h>
 
-KeyFrame::KeyFrame(const char * const filename) {
-	model = loadObjModel(filename);
+KeyFrame::KeyFrame() {
 	modelBuffer = NULL;
 
 	vertices = 0;
@@ -13,6 +12,14 @@ KeyFrame::KeyFrame(const char * const filename) {
 	vbo[1] = 0;
 	vbo[2] = 0;
 	vbo[3] = 0;
+}
+
+KeyFrame::KeyFrame(const char * const filename) : KeyFrame() {
+	model = loadObjModel(filename);
+}
+
+KeyFrame::KeyFrame(Model *model) : KeyFrame() {
+	this->model = model;
 }
 
 void KeyFrame::genBuffers() {
