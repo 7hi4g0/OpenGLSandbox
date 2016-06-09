@@ -21,6 +21,15 @@ struct GraphicsContext {
 	int				minor;
 };
 
+struct FrameCounter {
+	unsigned int lastTime;
+	unsigned int elapsedTime;
+	unsigned int frameCount;
+
+	unsigned int elapsedTimeTotal;
+	unsigned int frameCountTotal;
+};
+
 extern int					debug;
 extern int					verbose;
 extern XSetWindowAttributes	swa;
@@ -40,6 +49,8 @@ void msleep(unsigned int msec);
 unsigned int getTime();
 void Fullscreen(GraphicsContext *ctx);
 void NonFullscreen(GraphicsContext *ctx);
+FrameCounter *initFrameCounter();
+void updateFrameCounter(FrameCounter *);
 
 #define KEY_PRESS(name)		void name(XKeyEvent *xkey)
 typedef KEY_PRESS(KeyPressFn);

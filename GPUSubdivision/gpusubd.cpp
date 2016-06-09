@@ -126,8 +126,10 @@ void AdaptiveSubSurf::genBuffers() {
 		(*levelIt)->genFaceSets();
 		(*levelIt)->setBuffersData(vertsBuffer);
 
-		cout << "Level " << level++ << endl;
-		cout << "Full indices: " << (*levelIt)->fullIndices << endl;
+		if (verbose) {
+			cout << "Level " << level++ << endl;
+			cout << "Full indices: " << (*levelIt)->fullIndices << endl;
+		}
 	}
 
 	vertices = vertsBuffer->verts.size();
@@ -145,7 +147,9 @@ void AdaptiveSubSurf::genBuffers() {
 	glBindBuffer(GL_ARRAY_BUFFER, valenceIndicesBuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertexValenceIndices * sizeof(unsigned int), &(vertsBuffer->vertexValenceIndices[0]), GL_STATIC_DRAW);
 
-	cout << vertices << endl;
+	if (verbose) {
+		cout << vertices << " vertices" << endl;
+	}
 }
 
 AdaptiveLevel *AdaptiveCatmullClark(AdaptiveLevel *prevLevel, unsigned int vertexOffset) {

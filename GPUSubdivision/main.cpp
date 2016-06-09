@@ -45,6 +45,7 @@ static bool showCage;
 int main(int argc, char *argv[]) {
 	char opt;
 	char *filename;
+	unsigned int measure;
 
 	filename = (char *) "../Models/sphere.obj";
 
@@ -52,8 +53,9 @@ int main(int argc, char *argv[]) {
 	levels = 3;
 	cageLevel = 0;
 	showCage = false;
+	measure = 0;
 
-	while ((opt = getopt(argc, argv, ":dvf:l:")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:l:m:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
@@ -66,6 +68,9 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'l':
 				levels = atoi(optarg);
+				break;
+			case 'm':
+				measure = atoi(optarg);
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -248,7 +253,33 @@ int main(int argc, char *argv[]) {
 
 		EndDraw(ctx);	GLERR();
 
-		msleep(33);
+		//msleep(33);
+
+		updateFrameCounter(frameCounter);
+
+		if (measure > 0) {
+			if (frameCounter->elapsedTime >= 1000) {
+				float fps = (float) (frameCounter->frameCount * 1000) / (float) frameCounter->elapsedTime;
+
+				cout << frameCounter->frameCount << ", ";
+				cout << frameCounter->elapsedTime << ", ";
+				cout << fps << endl;
+
+				frameCounter->frameCount = 0;
+				frameCounter->elapsedTime = 0;
+			}
+
+			if (frameCounter->elapsedTimeTotal >= measure) {
+				loop = false;
+			}
+		}
+	}
+
+	if (measure > 0) {
+		float fps = (float) (frameCounter->frameCountTotal * 1000) / (float) frameCounter->elapsedTimeTotal;
+		cout << frameCounter->frameCountTotal << ", ";
+		cout << frameCounter->elapsedTimeTotal << ", ";
+		cout << fps << endl;
 	}
 
 	DestroyWindow(ctx);
@@ -364,7 +395,7 @@ void setPipeline() {
 	glDeleteShader(flatGShader);
 
 	glUseProgramStages(pipeline[0], GL_VERTEX_SHADER_BIT, regularProgram);	GLERR();
-	glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+	glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 
 	glUseProgramStages(pipeline[1], GL_VERTEX_SHADER_BIT, cageProgram);	GLERR();
 	glUseProgramStages(pipeline[1], GL_TESS_CONTROL_SHADER_BIT | GL_TESS_EVALUATION_SHADER_BIT, quadProgram);	GLERR();
@@ -380,7 +411,7 @@ void updateModelView() {
 }
 
 KEY_PRESS(keyPress) {
-	static unsigned int geometry = 0;
+	static unsigned int geometry = 1;
 	static float zLight = 0;
 	KeySym keysym;
 	unsigned int currentTime;
@@ -400,41 +431,22 @@ KEY_PRESS(keyPress) {
 			glUseProgramStages(pipeline[0], GL_GEOMETRY_SHADER_BIT, 0);	GLERR();
 			glUseProgramStages(pipeline[0], GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 			geometry = 1;
-			/*
-			smoothNormals = true;
-			setBuffer(model->getLevel(levels));
-			*/
 			break;
 		case (XK_f):
 			glUseProgramStages(pipeline[0], GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 			geometry = 1;
-			/*
-			smoothNormals = false;
-			setBuffer(model->getLevel(levels));
-			*/
 			break;
 		case (XK_KP_Subtract):
 			if (cageLevel > 0) {
 				cageLevel--;
-				//setBuffer(model->getLevel(levels));
 			}
 			cout << levels << endl;
 			break;
 		case (XK_KP_Add):
 			if (cageLevel < model->levels - 1) {
-			/*
-				if (verbose) {
-					currentTime = getTime();
-				}
-				model->subdivide();
-				if (verbose) {
-					cout << (getTime() - currentTime) << " ms - Catmull-Clark" << endl;
-				}
-			*/
 				cageLevel++;
 			}
 			cout << levels << endl;
-			//setBuffer(model->getLevel(levels));
 			break;
 		case (XK_Up):
 			zLight += 1;

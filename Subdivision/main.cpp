@@ -56,12 +56,15 @@ void printFaceInfo() {
 int main(int argc, char *argv[]) {
 	char opt;
 	char *filename;
+	unsigned int measure;
 
 	filename = (char *) "../Models/suzanne.obj";
 
+	levels = 0;
 	debug = 0;
+	measure = 0;
 
-	while ((opt = getopt(argc, argv, ":dvf:")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:l:m:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
@@ -71,6 +74,12 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'f':
 				filename = optarg;
+				break;
+			case 'l':
+				levels = atoi(optarg) - 1;
+				break;
+			case 'm':
+				measure = atoi(optarg);
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -86,9 +95,8 @@ int main(int argc, char *argv[]) {
 	TreatKeyPress = keyPress;
 	TreatButtonPress = buttonPress;
 
-	levels = 0;
 	stepByStep = 0;
-	smoothNormals = false;
+	smoothNormals = true;
 
 	initGLFunctions();
 
@@ -111,12 +119,16 @@ int main(int argc, char *argv[]) {
 
 	model = new SubSurf(filename);
 
+	for (int level = 0; level < levels; level++) {
+		model->subdivide();
+	}
+
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glGenBuffers(4, &vbo[0]);
 
-	setBuffer(model->getLevel(0));
+	setBuffer(model->getLevel(levels));
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -125,8 +137,8 @@ int main(int argc, char *argv[]) {
 	GLint lightPosUniform;
 	GLint colorUniform;
 
-	innerLevel = 2.0f;
-	outerLevel = 2.0f;
+	innerLevel = 1.0f;
+	outerLevel = 1.0f;
 
 	lightPos[0] = (Vertex) {1.5f, 1.5f, 0.0f};
 	lightPos[1] = (Vertex) {-1.5f, 1.5f, 0.0f};
@@ -140,6 +152,8 @@ int main(int argc, char *argv[]) {
 	color = (Vertex) {1.0f, 0.0f, 0.0f};
 
 	glBindProgramPipeline(pipeline);	GLERR();
+
+	FrameCounter *frameCounter = initFrameCounter();
 
 	loop = true;
 	while(loop) {
@@ -192,7 +206,33 @@ int main(int argc, char *argv[]) {
 
 		EndDraw(ctx);	GLERR();
 
-		msleep(33);
+		//msleep(33);
+
+		updateFrameCounter(frameCounter);
+
+		if (measure > 0) {
+			if (frameCounter->elapsedTime >= 1000) {
+				float fps = (float) (frameCounter->frameCount * 1000) / (float) frameCounter->elapsedTime;
+
+				cout << frameCounter->frameCount << ", ";
+				cout << frameCounter->elapsedTime << ", ";
+				cout << fps << endl;
+
+				frameCounter->frameCount = 0;
+				frameCounter->elapsedTime = 0;
+			}
+
+			if (frameCounter->elapsedTimeTotal >= measure) {
+				loop = false;
+			}
+		}
+	}
+
+	if (measure > 0) {
+		float fps = (float) (frameCounter->frameCountTotal * 1000) / (float) frameCounter->elapsedTimeTotal;
+		cout << frameCounter->frameCountTotal << ", ";
+		cout << frameCounter->elapsedTimeTotal << ", ";
+		cout << fps << endl;
 	}
 
 	DestroyWindow(ctx);
@@ -329,7 +369,7 @@ void setPipeline() {
 	glDeleteShader(flatGShader);
 
 	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, vertProgram);	GLERR();
-	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT | GL_GEOMETRY_SHADER_BIT, lineProgram);	GLERR();
+	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
 }
 
 void updateModelView() {
@@ -340,7 +380,7 @@ void updateModelView() {
 }
 
 KEY_PRESS(keyPress) {
-	static unsigned int geometry = 0;
+	static unsigned int geometry = 1;
 	static float zLight = 0;
 	KeySym keysym;
 	unsigned int currentTime;

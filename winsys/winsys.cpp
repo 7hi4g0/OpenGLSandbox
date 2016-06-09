@@ -282,3 +282,25 @@ void Fullscreen(GraphicsContext *ctx) {
 	//Send the XEvent that was just created
 	XSendEvent (ctx->dpy, ctx->root, False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
+
+FrameCounter *initFrameCounter() {
+	FrameCounter * frameCounter = new FrameCounter{0};
+
+	frameCounter->lastTime = getTime();
+}
+
+void updateFrameCounter(FrameCounter *frameCounter) {
+	unsigned int currTime;
+	unsigned int elapsedTime;
+
+	currTime = getTime();
+	elapsedTime = currTime - frameCounter->lastTime;
+
+	frameCounter->lastTime = currTime;
+
+	frameCounter->elapsedTime += elapsedTime;
+	frameCounter->elapsedTimeTotal += elapsedTime;
+
+	frameCounter->frameCount += 1;
+	frameCounter->frameCountTotal += 1;
+}
