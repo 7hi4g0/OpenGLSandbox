@@ -34,27 +34,12 @@ void AdaptiveSubSurf::subdivide(int levels) {
 		exit(1);
 	}
 
-	unsigned int vertices = 0;
-
 	vertices = subLevels.back()->mesh->pos.size();
 
 	for (int level = 1; level < levels; level++) {
 		sub = AdaptiveCatmullClark(subLevels.back(), vertices);
 		subLevels.push_back(sub);
 		vertices += sub->mesh->pos.size();
-	}
-
-	vertsBuffer->verts.resize(vertices);
-
-	for (int level = 0; level < levels; level++) {
-		Model *mesh = subLevels[level]->mesh;
-
-		for (auto vertIt = mesh->pos.begin(); vertIt != mesh->pos.end(); vertIt++) {
-			PositionPtr vert = *vertIt;
-
-			vertsBuffer->verts[vert->idx] = vert->v;
-			vertsBuffer->vertexValenceIndices.push_back(0);
-		}
 	}
 
 	this->levels = levels;
@@ -117,6 +102,19 @@ void AdaptiveSubSurf::gpuCatmullClark() {
 
 void AdaptiveSubSurf::genBuffers() {
 	glGenBuffers(3, &vbo[0]);
+
+	vertsBuffer->verts.resize(vertices);
+
+	for (int level = 0; level < levels; level++) {
+		Model *mesh = subLevels[level]->mesh;
+
+		for (auto vertIt = mesh->pos.begin(); vertIt != mesh->pos.end(); vertIt++) {
+			PositionPtr vert = *vertIt;
+
+			vertsBuffer->verts[vert->idx] = vert->v;
+			vertsBuffer->vertexValenceIndices.push_back(0);
+		}
+	}
 
 	vertsBuffer->vertexValence.push_back(0); // pad
 

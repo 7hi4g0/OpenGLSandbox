@@ -357,6 +357,21 @@ bool PositionEquality::operator() (const PositionPtr& p, const PositionPtr& q) c
 	return *p == *q;
 }
 
+Model::~Model() {
+	for (auto posIt = pos.begin(); posIt != pos.end(); posIt++) {
+		delete (*posIt);
+	}
+	for (auto normalIt = normals.begin(); normalIt != normals.end(); normalIt++) {
+		delete (*normalIt);
+	}
+	for (auto edgeIt = edges.begin(); edgeIt != edges.end(); edgeIt++) {
+		delete (*edgeIt);
+	}
+	for (auto faceIt = faces.begin(); faceIt != faces.end(); faceIt++) {
+		delete (*faceIt);
+	}
+}
+
 ModelBuffer *Model::genBuffer(bool smooth) {
 	ModelBuffer *buffer = new ModelBuffer;
 	unsigned int index = 0;

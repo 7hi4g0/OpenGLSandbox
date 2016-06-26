@@ -171,6 +171,11 @@ void TreatEvents(GraphicsContext *ctx) {
 		
 		switch (xev.type){
 			case KeyPress:
+				switch (XLookupKeysym(&xev.xkey, 0)){
+					case (XK_w):
+						saveImage();
+						break;
+				}
 				TreatKeyPress(&xev.xkey);
 				break;
 			case KeyRelease:
@@ -303,4 +308,43 @@ void updateFrameCounter(FrameCounter *frameCounter) {
 
 	frameCounter->frameCount += 1;
 	frameCounter->frameCountTotal += 1;
+}
+
+void saveImage(const char *filename) {
+	FILE *imageFile;
+	void *image;
+	uint8_t *pixel;
+
+	image = malloc(sizeof(uint8_t) * 3 * 600 * 600);
+
+	glReadPixels(0, 0, 600, 600, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+	if (filename == NULL) {
+		filename = "screenshot.ppm";
+	}
+	imageFile = fopen(filename, "w");
+
+	if (imageFile != NULL) {
+		fprintf(imageFile, "P3\n%d %d\n255\n", 600, 600);
+
+		pixel = (uint8_t *) image + (3 * 600 * 599);
+
+		for (int y = 0; y < 600; y++) {
+			for (int x = 0; x < 600; x++) {
+				fprintf(imageFile, "%d ", *pixel);
+				pixel++;
+				fprintf(imageFile, "%d ", *pixel);
+				pixel++;
+				fprintf(imageFile, "%d ", *pixel);
+				pixel++;
+			}
+			fprintf(imageFile, "\n");
+			pixel -= 3 * 600 * 2;
+		}
+
+		fclose(imageFile);
+		imageFile = NULL;
+
+		fprintf(stderr, "File saved!\n");
+	}
 }

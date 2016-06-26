@@ -29,6 +29,7 @@ PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;
 PFNGLPROGRAMPARAMETERIPROC 			glProgramParameteri;
 PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
 PFNGLPROGRAMUNIFORM3FVPROC 			glProgramUniform3fv;
+PFNGLPROGRAMUNIFORM4FVPROC 			glProgramUniform4fv;
 PFNGLPROGRAMUNIFORMMATRIX4FVPROC 	glProgramUniformMatrix4fv;
 PFNGLSHADERSOURCEPROC				glShaderSource;
 PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;
@@ -77,6 +78,7 @@ void initGLFunctions() {
 	getFunction(PFNGLPROGRAMPARAMETERIPROC, 		glProgramParameteri);
 	getFunction(PFNGLPROGRAMUNIFORM1FVPROC, 		glProgramUniform1fv);
 	getFunction(PFNGLPROGRAMUNIFORM3FVPROC, 		glProgramUniform3fv);
+	getFunction(PFNGLPROGRAMUNIFORM4FVPROC, 		glProgramUniform4fv);
 	getFunction(PFNGLPROGRAMUNIFORMMATRIX4FVPROC, 	glProgramUniformMatrix4fv);
 	getFunction(PFNGLSHADERSOURCEPROC,				glShaderSource);
 	getFunction(PFNGLUSEPROGRAMSTAGESPROC, 			glUseProgramStages);

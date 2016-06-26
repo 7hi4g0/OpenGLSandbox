@@ -51,6 +51,7 @@ void Fullscreen(GraphicsContext *ctx);
 void NonFullscreen(GraphicsContext *ctx);
 FrameCounter *initFrameCounter();
 void updateFrameCounter(FrameCounter *);
+void saveImage(const char *filename = NULL);
 
 #define KEY_PRESS(name)		void name(XKeyEvent *xkey)
 typedef KEY_PRESS(KeyPressFn);

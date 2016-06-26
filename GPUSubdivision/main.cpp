@@ -148,8 +148,8 @@ int main(int argc, char *argv[]) {
 	levelColor[1] = (Vertex) {0.0f, 1.0f, 0.0f};
 	levelColor[2] = (Vertex) {0.0f, 0.0f, 1.0f};
 	levelColor[3] = (Vertex) {1.0f, 1.0f, 0.0f};
-	levelColor[4] = (Vertex) {0.0f, 1.0f, 1.0f};
-	levelColor[5] = (Vertex) {1.0f, 0.0f, 1.0f};
+	levelColor[4] = (Vertex) {1.0f, 0.0f, 1.0f};
+	levelColor[5] = (Vertex) {0.0f, 1.0f, 1.0f};
 
 	int lastLevel = model->levels - 1;
 

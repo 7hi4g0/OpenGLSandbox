@@ -1,4 +1,5 @@
-#version 430 core
+#version 410 core
+#extension GL_ARB_explicit_uniform_location : require
 
 layout(vertices = 4) out;
 

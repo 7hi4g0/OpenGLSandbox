@@ -141,6 +141,18 @@ AdaptiveLevel::AdaptiveLevel() {
 	vbo[6] = 0;
 }
 
+AdaptiveLevel::~AdaptiveLevel() {
+	if (mesh != NULL) {
+		delete mesh;
+	}
+	if (adaptiveBuffer != NULL) {
+		delete adaptiveBuffer;
+	}
+	if (topologyBuffer != NULL) {
+		delete topologyBuffer;
+	}
+}
+
 void AdaptiveLevel::addFace(FacePtr face) {
 	subFaces.insert(face);
 

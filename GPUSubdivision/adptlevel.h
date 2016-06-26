@@ -72,6 +72,7 @@ struct AdaptiveLevel {
 	};
 
 	AdaptiveLevel();
+	~AdaptiveLevel();
 
 	void addFace(FacePtr);
 	void addFaceRing(FacePtr);

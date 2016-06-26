@@ -51,6 +51,7 @@ extern	PFNGLPATCHPARAMETERIPROC 			glPatchParameteri;
 extern	PFNGLPROGRAMPARAMETERIPROC 			glProgramParameteri;
 extern	PFNGLPROGRAMUNIFORM1FVPROC 			glProgramUniform1fv;
 extern	PFNGLPROGRAMUNIFORM3FVPROC 			glProgramUniform3fv;
+extern	PFNGLPROGRAMUNIFORM4FVPROC 			glProgramUniform4fv;
 extern	PFNGLPROGRAMUNIFORMMATRIX4FVPROC 	glProgramUniformMatrix4fv;
 extern	PFNGLSHADERSOURCEPROC				glShaderSource;
 extern	PFNGLUSEPROGRAMSTAGESPROC 			glUseProgramStages;

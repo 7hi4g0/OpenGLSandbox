@@ -28,9 +28,9 @@ void main() {
 }
 
 vec4 lightColor(vec4 normal, vec3 lightPos, vec4 baseColor) {
-	vec4 lightDir = vec4(lightPos, 1.0) - gl_Position;
+	vec3 lightDir = lightPos - gl_Position.xyz;
 	float dist = length(lightDir);
 	lightDir = normalize(lightDir);
 
-	return clamp(dot(normal, lightDir), 0.0, 1.0) * baseColor / (1 + (0.01 / 9) * dist * dist);
+	return 0.8 * clamp(dot(normal.xyz, lightDir), 0.0, 1.0) * baseColor / (1 + 0.1 * dist + (0.01 / 9) * dist * dist);
 }

@@ -62,7 +62,7 @@ struct Face {
 	VertexPtr normals[4];
 	EdgePtr edges[4];
 
-	unsigned int newIdx;
+	unsigned int newIdx = 0;
 
 	bool tagged = false;
 	bool wasTagged = true;
@@ -79,7 +79,7 @@ struct Edge {
 	PositionPtr v0;
 	PositionPtr v1;
 
-	unsigned int newIdx;
+	unsigned int newIdx = 0;
 
 	FacePtr faces[2];
 	int faceCount;
@@ -107,8 +107,8 @@ typedef std::unordered_set<EdgePtr, EdgeHash, EdgeEquality> EdgeSet;
 struct Position {
 	Vertex v;
 
-	unsigned int idx;
-	unsigned int newIdx;
+	unsigned int idx = 0;
+	unsigned int newIdx = 0;
 
 	bool tagged = false;
 
@@ -155,6 +155,8 @@ struct Model {
 	VertexSet normals;
 	EdgeSet edges;
 	FaceSet faces;
+
+	~Model();
 
 	ModelBuffer *genBuffer(bool = false);
 };
