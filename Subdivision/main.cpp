@@ -42,6 +42,7 @@ static Vertex color;
 static int levels;
 static int stepByStep;
 static bool smoothNormals;
+static bool spaceMeasure;
 
 void printFaceInfo() {
 	GLuint *index = &modelBuffer->quadIndices[indices - 4];
@@ -57,14 +58,19 @@ int main(int argc, char *argv[]) {
 	char opt;
 	char *filename;
 	unsigned int measure;
+	bool timeSubd;
+	char *screenshotFilename;
 
 	filename = (char *) "../Models/suzanne.obj";
+	screenshotFilename = NULL;
 
 	levels = 0;
 	debug = 0;
 	measure = 0;
+	timeSubd = false;
+	spaceMeasure = false;
 
-	while ((opt = getopt(argc, argv, ":dvf:l:m:")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:l:m:tsw:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
@@ -80,6 +86,15 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'm':
 				measure = atoi(optarg);
+				break;
+			case 't':
+				timeSubd = true;
+				break;
+			case 's':
+				spaceMeasure = true;
+				break;
+			case 'w':
+				screenshotFilename = optarg;
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -115,9 +130,11 @@ int main(int argc, char *argv[]) {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 	model = new SubSurf(filename);
+
+	unsigned int lastTime = getTime();
 
 	for (int level = 0; level < levels; level++) {
 		model->subdivide();
@@ -129,6 +146,25 @@ int main(int argc, char *argv[]) {
 	glGenBuffers(4, &vbo[0]);
 
 	setBuffer(model->getLevel(levels));
+	
+	if (timeSubd) {
+		cout << getTime() - lastTime << endl;
+
+		DestroyWindow(ctx);
+		return 0;
+	}
+
+	if (spaceMeasure) {
+		Model *mesh = model->getLevel(levels);
+		cout << mesh->faces.size() << ", ";
+		cout << mesh->pos.size() << ", ";
+		cout << modelBuffer->pos.size() << ", ";
+		cout << quadIndices << ", ";
+		cout << triIndices << endl;
+
+		DestroyWindow(ctx);
+		return 0;
+	}
 
 	GLint innerLevelUniform;
 	GLint outerLevelUniform;
@@ -225,6 +261,11 @@ int main(int argc, char *argv[]) {
 			if (frameCounter->elapsedTimeTotal >= measure) {
 				loop = false;
 			}
+		}
+		
+		if (screenshotFilename != NULL) {
+			saveImage(screenshotFilename);
+			loop = false;
 		}
 	}
 
@@ -370,6 +411,7 @@ void setPipeline() {
 
 	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, vertProgram);	GLERR();
 	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, smoothProgram);	GLERR();
+	//glUseProgramStages(pipeline, GL_GEOMETRY_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, flatProgram);	GLERR();
 }
 
 void updateModelView() {

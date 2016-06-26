@@ -2,8 +2,6 @@
 *.o
 *.a
 
-measure.sh
-
 # CMake
 CMakeCache.txt
 CMakeFiles/

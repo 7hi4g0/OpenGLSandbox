@@ -41,21 +41,27 @@ static int levels;
 static int cageLevel;
 static std::vector<KeyFrame *> cages;
 static bool showCage;
+static bool spaceMeasure;
 
 int main(int argc, char *argv[]) {
 	char opt;
 	char *filename;
 	unsigned int measure;
+	bool timeSubd;
+	char *screenshotFilename;
 
 	filename = (char *) "../Models/sphere.obj";
+	screenshotFilename = NULL;
 
 	debug = 0;
 	levels = 3;
 	cageLevel = 0;
 	showCage = false;
 	measure = 0;
+	timeSubd = false;
+	spaceMeasure = false;
 
-	while ((opt = getopt(argc, argv, ":dvf:l:m:")) != -1) {
+	while ((opt = getopt(argc, argv, ":dvf:l:m:tsw:")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug += 1;
@@ -71,6 +77,15 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'm':
 				measure = atoi(optarg);
+				break;
+			case 't':
+				timeSubd = true;
+				break;
+			case 's':
+				spaceMeasure = true;
+				break;
+			case 'w':
+				screenshotFilename = optarg;
 				break;
 			case ':':
 				fprintf(stderr, "%c needs an argument\n", optopt);
@@ -108,15 +123,97 @@ int main(int argc, char *argv[]) {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 	model = new AdaptiveSubSurf(filename);
+
+	unsigned int lastTime = getTime();
 
 	model->subdivide(levels);
 	model->genBuffers();
 
 	model->genCatmullClarkTables();
-	model->gpuCatmullClark();
+	if (timeSubd) {
+		GLuint queryTime;
+		GLuint queryElapsedTime;
+
+		glGenQueries(1, &queryTime);
+
+		glBeginQuery(GL_TIME_ELAPSED, queryTime);
+
+		model->gpuCatmullClark();
+
+		glEndQuery(GL_TIME_ELAPSED);
+
+		glGetQueryObjectuiv(queryTime, GL_QUERY_RESULT, &queryElapsedTime);
+
+		cout << ((queryElapsedTime / 1000) / 1000.0) << ", ";
+	} else {
+		model->gpuCatmullClark();
+	}
+	
+	if (timeSubd) {
+		cout << (getTime() - lastTime) << endl;
+
+		DestroyWindow(ctx);
+		return 0;
+	}
+
+	if (spaceMeasure) {
+		GLuint quads = 0;
+		GLuint tris = 0;
+		GLuint extraordinary = 0;
+
+		cout << "Vertices, VertexValence, quads, tris, extraordinary" << endl;
+
+		cout << model->vertices << ", ";
+		cout << model->vertexValence << ", ";
+
+		Model *mesh = model->subLevels[0]->mesh;
+
+		for (auto posIt = mesh->pos.begin(); posIt != mesh->pos.end(); posIt++) {
+			PositionPtr pos = *posIt;
+
+			if (pos->isExtraordinary()) {
+				extraordinary++;
+			}
+		}
+
+		for (auto faceIt = mesh->faces.begin(); faceIt != mesh->faces.end(); faceIt++) {
+			FacePtr face = *faceIt;
+
+			if (face->numVertices == 4) {
+				quads++;
+			} else if (face->numVertices == 3) {
+				tris++;
+			}
+		}
+
+		cout << quads << ", ";
+		cout << tris << ", ";
+		cout << extraordinary << endl;
+
+		cout << "Level, MeshVertices, MeshFaces, FullIndices, LevelRegularIndices, LevelIrregularIndices, subFaces, subEdges, subVertices, Adjacency, AdjacencyIndices" << endl;
+
+		for (unsigned int level = 0; level < model->levels; level++) {
+			AdaptiveLevel *adaptiveLevel = model->subLevels[level];
+
+			cout << level + 1 << ", ";
+			cout << adaptiveLevel->mesh->pos.size() << ", ";
+			cout << adaptiveLevel->mesh->faces.size() << ", ";
+			cout << adaptiveLevel->fullIndices << ", ";
+			cout << adaptiveLevel->levelRegularIndices << ", ";
+			cout << adaptiveLevel->levelIrregularIndices << ", ";
+			cout << adaptiveLevel->subFaces.size() << ", ";
+			cout << adaptiveLevel->subEdges.size() << ", ";
+			cout << adaptiveLevel->subVertices.size() << ", ";
+			cout << adaptiveLevel->adjacency << ", ";
+			cout << adaptiveLevel->adjacencyIndices << endl;
+		}
+
+		DestroyWindow(ctx);
+		return 0;
+	}
 
 	for (int level = 0; level < levels; level++) {
 		KeyFrame *cage;
@@ -272,6 +369,11 @@ int main(int argc, char *argv[]) {
 			if (frameCounter->elapsedTimeTotal >= measure) {
 				loop = false;
 			}
+		}
+
+		if (screenshotFilename != NULL) {
+			saveImage(screenshotFilename);
+			loop = false;
 		}
 	}
 
